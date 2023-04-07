@@ -1,0 +1,17 @@
+<div class="section" id="divSchedules">
+  <div *ngIf="schedules.length > 0; else noSchedule">
+    <mat-list *ngFor="let schedule of schedules" id="lstSchedules" role="list">
+      <mat-list-item role="listitem">Name: {{ schedule.Name }}</mat-list-item>
+    </mat-list>
+  </div>
+  <ng-template #noSchedule>
+    <div>Keine Futterpläne</div>
+  </ng-template>
+  <button id="btnAdd" mat-fab color="basic">
+    <mat-icon>add</mat-icon>
+  </button>
+  <a (click)="navBack()" class="navVertical left">
+    <mat-icon>navigate_before</mat-icon>
+  </a>
+</div>
+<div class="section" id="selectedSchedule"></div>

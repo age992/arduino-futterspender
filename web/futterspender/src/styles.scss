@@ -1,0 +1,86 @@
+// Custom Theming for Angular Material
+// For more information: https://material.angular.io/guide/theming
+@use "@angular/material" as mat;
+// Plus imports for other components in your app.
+
+// Include the common styles for Angular Material. We include this here so that you only
+// have to load a single css file for Angular Material in your app.
+// Be sure that you only ever include this mixin once!
+@include mat.core();
+
+// Define the palettes for your theme using the Material Design palettes available in palette.scss
+// (imported above). For each palette, you can optionally specify a default, lighter, and darker
+// hue. Available color palettes: https://material.io/design/color/
+$futterspender-primary: mat.define-palette(mat.$indigo-palette);
+$futterspender-accent: mat.define-palette(mat.$pink-palette, A200, A100, A400);
+
+// The warn palette is optional (defaults to red).
+$futterspender-warn: mat.define-palette(mat.$red-palette);
+
+// Create the theme object. A theme consists of configurations for individual
+// theming systems such as "color" or "typography".
+$futterspender-theme: mat.define-light-theme(
+  (
+    color: (
+      primary: $futterspender-primary,
+      accent: $futterspender-accent,
+      warn: $futterspender-warn,
+    ),
+  )
+);
+
+// Include theme styles for core and each component used in your app.
+// Alternatively, you can import and @include the theme mixins for each component
+// that you are using.
+@include mat.all-component-themes($futterspender-theme);
+
+/* You can add global styles to this file, and also import other style files */
+
+mat-divider {
+  width: 100%;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+  position: fixed;
+}
+
+.section {
+  display: flex;
+  position: relative;
+  justify-content: space-around;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 1em 0 1em 0;
+  box-shadow: 0px 1px 5px rgb(148, 148, 148);
+}
+
+.section.vertical {
+  flex-direction: column;
+}
+
+.navVertical {
+  z-index: 1;
+  position: absolute;
+  height: 100%;
+  width: 2em;
+  background-color: white;
+  display: flex;
+  align-items: center;
+}
+
+.navVertical.right {
+  right: 0;
+  box-shadow: 1px 0px 5px rgb(148, 148, 148);
+}
+
+.navVertical.left {
+  left: 0;
+  box-shadow: -1px 0px 5px rgb(148, 148, 148);
+}
