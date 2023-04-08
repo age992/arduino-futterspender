@@ -1,0 +1,25 @@
+#divHistoryDisplay {
+  height: 50%;
+  box-shadow: none;
+}
+
+#divDatePicker {
+  height: 35%;
+}
+
+#divFooter {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 1em 0 1em 0;
+  height: 15%;
+
+  button {
+    height: 60% !important;
+    min-height: unset !important;
+    width: 25% !important;
+    min-width: unset !important;
+    font-size: large;
+  }
+}

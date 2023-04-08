@@ -7,10 +7,26 @@ import { HistoryComponent } from './history/history.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
-  { path: 'dashboard', component: DashboardComponent },
-  { path: 'settings', component: SettingsComponent },
-  { path: 'schedules', component: SchedulesComponent },
-  { path: 'history', component: HistoryComponent },
+  {
+    path: 'dashboard',
+    component: DashboardComponent,
+    data: { animation: 'dashboard' },
+  },
+  {
+    path: 'schedules',
+    component: SchedulesComponent,
+    data: { animation: 'schedules' },
+  },
+  {
+    path: 'settings',
+    component: SettingsComponent,
+    data: { animation: 'settings' },
+  },
+  {
+    path: 'history',
+    component: HistoryComponent,
+    data: { animation: 'history' },
+  },
 ];
 
 @NgModule({

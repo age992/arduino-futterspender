@@ -1,10 +1,14 @@
 <div id="header" class="section">
-  <button mat-fab color="basic">
-    <mat-icon>settings</mat-icon>
-  </button>
+  <a routerLink="/settings">
+    <button mat-fab color="basic">
+      <mat-icon>settings</mat-icon>
+    </button>
+  </a>
   <button mat-raised-button color="primary" id="btnFeed">Füttern</button>
   <button mat-fab color="basic">
     <mat-icon>refresh</mat-icon>
   </button>
 </div>
-<router-outlet></router-outlet>
+<div id="routerOutlet" [@routeAnimations]="getRouteAnimationData(outlet)">
+  <router-outlet #outlet="outlet"></router-outlet>
+</div>

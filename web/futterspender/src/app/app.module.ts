@@ -12,6 +12,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { SchedulesComponent } from './schedules/schedules.component';
 import { HistoryComponent } from './history/history.component';
 import { MatListModule } from '@angular/material/list';
+import { MatRippleModule } from '@angular/material/core';
 
 @NgModule({
   declarations: [
@@ -29,6 +30,7 @@ import { MatListModule } from '@angular/material/list';
     MatIconModule,
     MatDividerModule,
     MatListModule,
+    MatRippleModule,
   ],
   providers: [],
   bootstrap: [AppComponent],
