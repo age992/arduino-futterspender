@@ -14,7 +14,28 @@
     <mat-icon>navigate_next</mat-icon>
   </a>
 </div>
-<div id="status" class="section"></div>
+<div id="status" class="section">
+  <div class="section vertical">
+    <label>Behälter:</label>
+    <ng-template [ngIf]="MachineStatus" [ngIfElse]="noLoadData">
+      <label>{{ MachineStatus.ContainerLoad }}g</label>
+    </ng-template>
+  </div>
+  <div class="section vertical">
+    <label>Fressnapf:</label>
+    <ng-template [ngIf]="MachineStatus" [ngIfElse]="noLoadData">
+      <label>{{ MachineStatus.PlateLoad }}g</label>
+    </ng-template>
+  </div>
+  <ng-template #noLoadData>
+    <ng-template [ngIf]="!Loading" [ngIfElse]="notLoading">
+      <label>-</label>
+    </ng-template>
+    <ng-template #notLoading>
+      <mat-spinner diameter="20"></mat-spinner>
+    </ng-template>
+  </ng-template>
+</div>
 <div id="history" class="section">
   <a routerLink="/history">
     <button

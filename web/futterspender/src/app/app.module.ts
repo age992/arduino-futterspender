@@ -13,6 +13,8 @@ import { SchedulesComponent } from './schedules/schedules.component';
 import { HistoryComponent } from './history/history.component';
 import { MatListModule } from '@angular/material/list';
 import { MatRippleModule } from '@angular/material/core';
+import { environment } from 'src/environments/environment';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @NgModule({
   declarations: [
@@ -31,8 +33,9 @@ import { MatRippleModule } from '@angular/material/core';
     MatDividerModule,
     MatListModule,
     MatRippleModule,
+    MatProgressSpinnerModule,
   ],
-  providers: [],
+  providers: [...environment.providers],
   bootstrap: [AppComponent],
 })
 export class AppModule {}

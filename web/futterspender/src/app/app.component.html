@@ -4,11 +4,23 @@
       <mat-icon>settings</mat-icon>
     </button>
   </a>
-  <button mat-raised-button color="primary" id="btnFeed">Füttern</button>
-  <button mat-fab color="basic">
-    <mat-icon>refresh</mat-icon>
+  <button
+    mat-raised-button
+    color="primary"
+    id="btnFeed"
+    (pointerdown)="btnFeed(true)"
+    (pointerup)="btnFeed(false)"
+    (contextmenu)="(false)"
+  >
+    Füttern
   </button>
-  <mat-icon id="icnConnection">signal_wifi_4_bar</mat-icon>
+  <ng-template [ngIf]="Connected" [ngIfElse]="disconnected">
+    <mat-icon id="icnConnection">signal_wifi_4_bar</mat-icon>
+  </ng-template>
+  <ng-template #disconnected>
+    <mat-icon id="icnConnection">signal_wifi_off</mat-icon>
+    Keine Verbindung zum Futterspender
+  </ng-template>
 </div>
 <div id="routerOutlet" [@routeAnimations]="getRouteAnimationData(outlet)">
   <router-outlet #outlet="outlet"></router-outlet>
