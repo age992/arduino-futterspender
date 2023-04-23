@@ -12,17 +12,18 @@ export class StatusMockService implements IStatusService {
 
   public Connected = new BehaviorSubject(true);
   public Loading = new BehaviorSubject(false);
+  public SetupMode = new BehaviorSubject(false);
 
   private lastUpdate = 0;
   private changeStatusDelay = 20000;
   private updateInterval = 10000;
 
   constructor() {
-    this.update();
-    setInterval(this.update, this.updateInterval);
+    this.fetchMachineStatus();
+    setInterval(this.fetchMachineStatus, this.updateInterval);
   }
 
-  public update = () => {
+  public fetchMachineStatus = () => {
     console.log('Update status...');
     this.Loading.next(true);
 

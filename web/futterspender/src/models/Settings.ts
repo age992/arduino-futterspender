@@ -8,4 +8,6 @@ export interface Settings {
   };
   PlateTAR: Number;
   PlateFilling: Number;
+  Language: String;
+  Theme: String;
 }

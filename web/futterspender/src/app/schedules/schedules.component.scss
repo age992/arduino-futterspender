@@ -6,6 +6,28 @@
     right: 2em;
     bottom: 2em;
   }
+
+  #divScheduleList {
+    width: 100%;
+
+    .selected {
+      background-color: #c1daf7;
+    }
+  }
+
+  #divNoSchedule {
+    position: absolute;
+    align-self: center;
+    justify-self: center;
+  }
+}
+
+.list {
+  justify-content: start;
+  align-items: start;
+  padding-left: 2em;
+  padding-top: 0;
+  width: 100%;
 }
 
 #selectedSchedule {

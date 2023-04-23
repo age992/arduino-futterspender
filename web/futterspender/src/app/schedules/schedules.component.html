@@ -1,17 +1,46 @@
-<div class="section" id="divSchedules">
-  <div *ngIf="schedules.length > 0; else noSchedule">
-    <mat-list *ngFor="let schedule of schedules" id="lstSchedules" role="list">
-      <mat-list-item role="listitem">Name: {{ schedule.Name }}</mat-list-item>
-    </mat-list>
+<div
+  class="section"
+  [ngClass]="{ list: schedules.length > 0 }"
+  id="divSchedules"
+>
+  <div id="divScheduleList" *ngIf="schedules.length > 0; else noSchedule">
+    <mat-selection-list
+      [multiple]="false"
+      [hideSingleSelectionIndicator]="true"
+      (selectionChange)="onScheduleSelectionChange($event)"
+    >
+      <mat-list-option
+        *ngFor="let schedule of schedules"
+        [value]="schedule.ID"
+        [ngClass]="{ selected: schedule.Selected }"
+      >
+        {{ schedule.Name }}
+      </mat-list-option>
+    </mat-selection-list>
   </div>
   <ng-template #noSchedule>
-    <div>Keine Futterpläne</div>
+    <ng-template [ngIf]="!Loading" [ngIfElse]="LoadingSchedules">
+      <div id="divNoSchedule">Keine Futterpläne</div>
+    </ng-template>
+    <ng-template #LoadingSchedules>
+      <mat-spinner diameter="20"></mat-spinner>
+    </ng-template>
   </ng-template>
-  <button id="btnAdd" mat-fab color="basic">
+  <button id="btnAdd" mat-fab color="basic" (click)="(btnAdd)">
     <mat-icon>add</mat-icon>
   </button>
   <a (click)="navBack()" class="navVertical left" matRipple>
     <mat-icon>navigate_before</mat-icon>
   </a>
 </div>
-<div class="section" id="selectedSchedule"></div>
+<div class="section vertical" id="selectedSchedule">
+  <input type="hidden" id="scheduleFormID" value="{{ getScheduleFormID() }}" />
+  <div id="divScheduleBasicData">
+    <mat-form-field appearance="fill">
+      <mat-label>Name</mat-label>
+      <input matInput [value]="selectedSchedule?.Name" />
+    </mat-form-field>
+  </div>
+  <div id="divScheduleTiming"></div>
+  <div></div>
+</div>

@@ -8,12 +8,14 @@ import { MachineStatus } from 'src/models/MachineStatus';
 })
 export class StatusService implements IStatusService {
   public MachineStatus: Subject<MachineStatus | null> = new Subject();
+
   public Connected = new BehaviorSubject(true);
   public Loading = new BehaviorSubject(false);
+  public SetupMode = new BehaviorSubject(false);
 
   constructor() {}
 
-  update(): void {
+  fetchMachineStatus(): void {
     throw new Error('Method not implemented.');
   }
 

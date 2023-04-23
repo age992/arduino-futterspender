@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-
+import { FormsModule } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
@@ -15,6 +16,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatRippleModule } from '@angular/material/core';
 import { environment } from 'src/environments/environment';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatInputModule } from '@angular/material/input';
 
 @NgModule({
   declarations: [
@@ -27,6 +29,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
   imports: [
     BrowserModule,
     AppRoutingModule,
+    FormsModule,
     BrowserAnimationsModule,
     MatButtonModule,
     MatIconModule,
@@ -34,6 +37,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     MatListModule,
     MatRippleModule,
     MatProgressSpinnerModule,
+    MatFormFieldModule,
+    MatInputModule,
   ],
   providers: [...environment.providers],
   bootstrap: [AppComponent],

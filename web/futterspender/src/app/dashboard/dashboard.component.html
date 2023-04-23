@@ -1,19 +1,88 @@
 <div id="foodPlanDisplay" class="section vertical">
-  <h3 id="foodPlanTitle">Plan: "Fritzchen"</h3>
-  <mat-divider></mat-divider>
-  <div>
-    <span>Details</span>
-    <div id="foodPlanDetails">Typ: Feste Uhrzeit Wann:</div>
-  </div>
-  <mat-divider></mat-divider>
-  <div>
-    <span>Nächste Fütterung</span>
-    <div id="foodPlanTime">18:20</div>
-  </div>
+  <ng-template [ngIf]="currentSchedule" [ngIfElse]="noScheduleData">
+    <h3 id="foodPlanTitle">
+      <span>{{ currentSchedule.Active ? "Aktiv " : "Pausiert " }}</span> Plan:
+      {{ currentSchedule.Name ? currentSchedule.Name : "-" }}
+    </h3>
+    <mat-divider></mat-divider>
+    <div>
+      <div id="foodPlanDetails">
+        <ng-container [ngSwitch]="true">
+          <div *ngSwitchCase="currentSchedule.Mode == EScheduleMode.Max">
+            <div>Typ: Nach Anzahl</div>
+            <div>
+              Maximal {{ currentSchedule.MaxTimes }} Fütterungen pro Tag
+            </div>
+            <div *ngIf="currentSchedule.OnlyWhenEmpty">
+              Warten, bis der Fressnapf leer ist
+            </div>
+          </div>
+          <div
+            *ngSwitchCase="currentSchedule.Mode == EScheduleMode.FixedDaytime"
+          >
+            <div>Typ: Nach Uhrzeit</div>
+            <ng-template [ngIf]="currentSchedule.Daytimes">
+              <div>Wann:</div>
+              <div>
+                <span
+                  *ngFor="let date of currentSchedule.Daytimes; let i = index"
+                  >{{ date.toLocaleTimeString([], { timeStyle: "short" })
+                  }}{{
+                    i + 1 < currentSchedule.Daytimes.length ? ", " : ""
+                  }}</span
+                >
+              </div>
+            </ng-template>
+            <div *ngIf="currentSchedule.OnlyWhenEmpty">
+              Warten, bis der Fressnapf leer ist
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+    <mat-divider></mat-divider>
+    <div>
+      <span>Nächste Fütterung</span>
+      <div id="foodPlanTime">
+        {{
+          nextFeedingTime
+            ? nextFeedingTime.toLocaleTimeString([], { timeStyle: "short" })
+            : "-"
+        }}
+      </div>
+    </div>
+
+    <ng-template [ngIf]="!UpdatingActivity" [ngIfElse]="activityUpdating">
+      <ng-template [ngIf]="currentSchedule.Active" [ngIfElse]="showPlayButton">
+        <button mat-fab color="basic" (click)="toggleScheduleActive(false)">
+          <mat-icon>pause</mat-icon>
+        </button>
+      </ng-template>
+      <ng-template #showPlayButton>
+        <button mat-fab color="basic" (click)="toggleScheduleActive(true)">
+          <mat-icon>play_arrow</mat-icon>
+        </button>
+      </ng-template>
+    </ng-template>
+    <ng-template #activityUpdating>
+      <button mat-fab color="basic">
+        <mat-spinner diameter="20"></mat-spinner>
+      </button>
+    </ng-template>
+  </ng-template>
+  <ng-template #noScheduleData>
+    <ng-template [ngIf]="!LoadingSchedule" [ngIfElse]="LoadingScheduleSpinner">
+      <label>Keine Futterpläne</label>
+    </ng-template>
+    <ng-template #LoadingScheduleSpinner>
+      <mat-spinner diameter="20"></mat-spinner>
+    </ng-template>
+  </ng-template>
   <a routerLink="/schedules" class="navVertical right" matRipple>
     <mat-icon>navigate_next</mat-icon>
   </a>
 </div>
+
 <div id="status" class="section">
   <div class="section vertical">
     <label>Behälter:</label>
@@ -28,14 +97,15 @@
     </ng-template>
   </div>
   <ng-template #noLoadData>
-    <ng-template [ngIf]="!Loading" [ngIfElse]="notLoading">
+    <ng-template [ngIf]="!LoadingStatus" [ngIfElse]="LoadingStatus">
       <label>-</label>
     </ng-template>
-    <ng-template #notLoading>
+    <ng-template #LoadingStatus>
       <mat-spinner diameter="20"></mat-spinner>
     </ng-template>
   </ng-template>
 </div>
+
 <div id="history" class="section">
   <a routerLink="/history">
     <button
