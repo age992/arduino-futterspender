@@ -6,7 +6,6 @@ export interface IScheduleService {
   Schedules: ReplaySubject<Schedule[]>;
   Loading: BehaviorSubject<boolean>;
   fetchSchedules(): void;
-  addSchedule(schedule: Schedule): void;
-  updateSchedule(schedule: Schedule): Observable<HttpResponse<unknown>>;
+  upsertSchedule(schedule: Schedule): Observable<HttpResponse<unknown>>;
   deleteSchedule(schedule: Schedule): void;
 }

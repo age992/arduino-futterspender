@@ -12,10 +12,7 @@ export class ScheduleService implements IScheduleService {
   Loading: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
   constructor() {}
-  addSchedule(schedule: Schedule): void {
-    throw new Error('Method not implemented.');
-  }
-  updateSchedule(schedule: Schedule): Observable<HttpResponse<unknown>> {
+  upsertSchedule(schedule: Schedule): Observable<HttpResponse<unknown>> {
     throw new Error('Method not implemented.');
   }
   deleteSchedule(schedule: Schedule): void {

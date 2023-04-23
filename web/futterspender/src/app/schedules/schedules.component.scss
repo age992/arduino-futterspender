@@ -11,7 +11,9 @@
     width: 100%;
 
     .selected {
-      background-color: #c1daf7;
+      border-style: solid none solid none;
+      border-radius: 1px;
+      border-color: rgb(158, 184, 255);
     }
   }
 
@@ -32,4 +34,49 @@
 
 #selectedSchedule {
   height: 50%;
+  position: relative;
+  padding: 1em 2em 1em 2em;
+
+  #divForm {
+    height: 80%;
+    width: 100%;
+
+    #dayTimesWrapper {
+      display: inline-flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+
+      #dayTimesListWrapper {
+        border-radius: 0.5em;
+        background-color: #f5f5f5;
+        padding: 1em 0 1em 0;
+        display: inline-flex;
+        width: 80%;
+        overflow-x: scroll;
+
+        mat-chip {
+          margin-right: 1em;
+        }
+      }
+    }
+  }
+
+  #divFooter {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-sizing: border-box;
+    height: 20%;
+
+    button {
+      height: 60% !important;
+      min-height: unset !important;
+      width: 30% !important;
+      min-width: unset !important;
+      font-size: large;
+      padding: auto;
+    }
+  }
 }

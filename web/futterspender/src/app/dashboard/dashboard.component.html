@@ -1,7 +1,14 @@
 <div id="foodPlanDisplay" class="section vertical">
   <ng-template [ngIf]="currentSchedule" [ngIfElse]="noScheduleData">
     <h3 id="foodPlanTitle">
-      <span>{{ currentSchedule.Active ? "Aktiv " : "Pausiert " }}</span> Plan:
+      <span
+        [ngClass]="{
+          activeText: currentSchedule.Active,
+          pausedText: !currentSchedule.Active
+        }"
+        >{{ currentSchedule.Active ? "Aktiv " : "Pausiert " }}</span
+      >
+      Plan:
       {{ currentSchedule.Name ? currentSchedule.Name : "-" }}
     </h3>
     <mat-divider></mat-divider>
@@ -21,18 +28,18 @@
             *ngSwitchCase="currentSchedule.Mode == EScheduleMode.FixedDaytime"
           >
             <div>Typ: Nach Uhrzeit</div>
-            <ng-template [ngIf]="currentSchedule.Daytimes">
+            <div *ngIf="currentSchedule.Daytimes">
               <div>Wann:</div>
               <div>
                 <span
                   *ngFor="let date of currentSchedule.Daytimes; let i = index"
-                  >{{ date.toLocaleTimeString([], { timeStyle: "short" })
+                  >{{ getTimestamp(date)
                   }}{{
                     i + 1 < currentSchedule.Daytimes.length ? ", " : ""
                   }}</span
                 >
               </div>
-            </ng-template>
+            </div>
             <div *ngIf="currentSchedule.OnlyWhenEmpty">
               Warten, bis der Fressnapf leer ist
             </div>
@@ -44,11 +51,7 @@
     <div>
       <span>Nächste Fütterung</span>
       <div id="foodPlanTime">
-        {{
-          nextFeedingTime
-            ? nextFeedingTime.toLocaleTimeString([], { timeStyle: "short" })
-            : "-"
-        }}
+        {{ nextFeedingTime ? getTimestamp(nextFeedingTime) : "-" }}
       </div>
     </div>
 

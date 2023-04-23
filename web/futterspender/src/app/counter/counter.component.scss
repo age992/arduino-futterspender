@@ -1,0 +1,14 @@
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  display: none;
+}
+
+input {
+  text-align: center;
+}
+
+mat-form-field {
+  width: 130px;
+  text-align: center;
+  -moz-appearance: textfield;
+}

@@ -1,9 +1,9 @@
 import { EScheduleMode } from 'src/app/lib/EScheduleMode';
 import { Schedule } from 'src/models/Schedule';
 
-const d1 = new Date('2022-01-01T06:00:00.000Z');
-const d2 = new Date('2022-01-01T12:30:00.000Z');
-const d3 = new Date('2022-01-01T19:30:00.000Z');
+const d1 = new Date('1970-01-01T06:00:00.000Z').getTime();
+const d2 = new Date('1970-01-01T12:30:00.000Z').getTime();
+const d3 = new Date('1970-01-01T19:30:00.000Z').getTime();
 
 export const schedules: Schedule[] = [
   {

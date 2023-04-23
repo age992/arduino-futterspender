@@ -4,6 +4,7 @@ import { Schedule } from 'src/models/Schedule';
 import { ScheduleService } from 'src/services/schedule/schedule.service';
 import { StatusService } from 'src/services/status/status.service';
 import { EScheduleMode } from 'src/app/lib/EScheduleMode';
+import { getTimestamp } from 'src/app/lib/DateConverter';
 
 @Component({
   selector: 'dashboard',
@@ -12,13 +13,14 @@ import { EScheduleMode } from 'src/app/lib/EScheduleMode';
 })
 export class DashboardComponent implements OnInit {
   public EScheduleMode: typeof EScheduleMode = EScheduleMode;
+  public getTimestamp = getTimestamp;
 
   public MachineStatus: MachineStatus | null = null;
   public LoadingStatus: boolean = false;
   public Connected: boolean = true;
 
   public currentSchedule: Schedule | null = null;
-  public nextFeedingTime: Date | null = null;
+  public nextFeedingTime: number | null = null;
   public LoadingSchedule: boolean = false;
   public UpdatingActivity: boolean = false;
 
@@ -45,15 +47,14 @@ export class DashboardComponent implements OnInit {
           if (schedule.Daytimes) {
             const now = new Date();
             schedule.Daytimes = schedule.Daytimes?.map((d) => {
-              d.setFullYear(now.getFullYear());
-              d.setMonth(now.getMonth());
-              d.setDate(now.getDate());
-              return d;
+              const date = new Date(d);
+              date.setFullYear(now.getFullYear());
+              date.setMonth(now.getMonth());
+              date.setDate(now.getDate());
+              return date.getTime();
             });
-            schedule.Daytimes.sort((d1, d2) => d1.getTime() - d2.getTime());
-            let index = schedule.Daytimes.findIndex(
-              (d) => d.getTime() > now.getTime()
-            );
+            schedule.Daytimes.sort();
+            let index = schedule.Daytimes.findIndex((d) => d > now.getTime());
             const nextTime =
               index > -1 ? schedule.Daytimes[index] : schedule.Daytimes[0];
             this.nextFeedingTime = nextTime;
@@ -74,7 +75,7 @@ export class DashboardComponent implements OnInit {
       Active: active,
     };
     this.UpdatingActivity = true;
-    this.scheduleService.updateSchedule(toggledSchedule).subscribe((s) => {
+    this.scheduleService.upsertSchedule(toggledSchedule).subscribe((s) => {
       this.currentSchedule = toggledSchedule;
       this.UpdatingActivity = false;
     });

@@ -10,6 +10,8 @@ export class StatusMockService implements IStatusService {
   public MachineStatus: ReplaySubject<MachineStatus | null> =
     new ReplaySubject();
 
+  private machineStatusInternal: MachineStatus | null = null;
+
   public Connected = new BehaviorSubject(true);
   public Loading = new BehaviorSubject(false);
   public SetupMode = new BehaviorSubject(false);
@@ -22,6 +24,10 @@ export class StatusMockService implements IStatusService {
     this.fetchMachineStatus();
     setInterval(this.fetchMachineStatus, this.updateInterval);
   }
+
+  private notify = () => {
+    this.MachineStatus.next(this.machineStatusInternal);
+  };
 
   public fetchMachineStatus = () => {
     console.log('Update status...');
@@ -38,7 +44,8 @@ export class StatusMockService implements IStatusService {
           WiFiConnection: true,
         };
         this.lastUpdate = now;
-        this.MachineStatus.next(newMachineStatus);
+        this.machineStatusInternal = newMachineStatus;
+        this.notify();
       }
 
       this.Loading.next(false);

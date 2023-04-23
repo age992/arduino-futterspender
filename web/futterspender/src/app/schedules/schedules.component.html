@@ -5,16 +5,25 @@
 >
   <div id="divScheduleList" *ngIf="schedules.length > 0; else noSchedule">
     <mat-selection-list
+      [formControl]="schedulesListControl"
       [multiple]="false"
       [hideSingleSelectionIndicator]="true"
-      (selectionChange)="onScheduleSelectionChange($event)"
     >
       <mat-list-option
         *ngFor="let schedule of schedules"
-        [value]="schedule.ID"
+        [value]="schedule"
         [ngClass]="{ selected: schedule.Selected }"
       >
         {{ schedule.Name }}
+        <span
+          *ngIf="schedule.Selected"
+          style="float: right"
+          [ngClass]="{
+            activeText: schedule.Active,
+            pausedText: !schedule.Active
+          }"
+          >{{ schedule.Active ? "Aktiv" : "Pausiert" }}</span
+        >
       </mat-list-option>
     </mat-selection-list>
   </div>
@@ -26,7 +35,7 @@
       <mat-spinner diameter="20"></mat-spinner>
     </ng-template>
   </ng-template>
-  <button id="btnAdd" mat-fab color="basic" (click)="(btnAdd)">
+  <button id="btnAdd" mat-fab color="basic" (click)="btnAdd()">
     <mat-icon>add</mat-icon>
   </button>
   <a (click)="navBack()" class="navVertical left" matRipple>
@@ -34,13 +43,126 @@
   </a>
 </div>
 <div class="section vertical" id="selectedSchedule">
-  <input type="hidden" id="scheduleFormID" value="{{ getScheduleFormID() }}" />
-  <div id="divScheduleBasicData">
-    <mat-form-field appearance="fill">
-      <mat-label>Name</mat-label>
-      <input matInput [value]="selectedSchedule?.Name" />
-    </mat-form-field>
-  </div>
-  <div id="divScheduleTiming"></div>
-  <div></div>
+  <ng-template [ngIf]="selectedSchedule" [ngIfElse]="noScheduleSelected">
+    <div id="divForm">
+      <input
+        type="hidden"
+        id="scheduleFormID"
+        [(ngModel)]="selectedSchedule.ID"
+      />
+
+      <div id="divScheduleBasicData" class="form-group">
+        <mat-form-field appearance="fill">
+          <mat-label>Name</mat-label>
+          <input matInput [(ngModel)]="selectedSchedule.Name" required />
+        </mat-form-field>
+      </div>
+      <div id="divScheduleMode" class="form-group">
+        <mat-form-field appearance="fill">
+          <mat-label>Modus</mat-label>
+          <mat-select
+            id="scheduleMode"
+            required
+            [(ngModel)]="selectedSchedule.Mode"
+            name="mode"
+          >
+            <mat-option *ngFor="let modeID of modeIDs" [value]="modeID">
+              <ng-container [ngSwitch]="true">
+                <div *ngSwitchCase="modeID == EScheduleMode.Max">
+                  Nach Anzahl
+                </div>
+                <div *ngSwitchCase="modeID == EScheduleMode.FixedDaytime">
+                  Nach Uhrzeit
+                </div>
+              </ng-container>
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <ng-container [ngSwitch]="true">
+          <div *ngSwitchCase="selectedSchedule.Mode == EScheduleMode.Max">
+            <app-counter
+              [value]="selectedSchedule.MaxTimes || 0"
+              [step]="1"
+              [min]="0"
+              [max]="99"
+              [wrap]="false"
+              (valueChanged)="onMaxTimesChanged($event)"
+            >
+            </app-counter>
+          </div>
+          <div
+            *ngSwitchCase="selectedSchedule.Mode == EScheduleMode.FixedDaytime"
+          >
+            <div>
+              <mat-label>Uhrzeiten</mat-label>
+              <div id="dayTimesWrapper">
+                <div id="dayTimesListWrapper">
+                  <mat-chip
+                    *ngFor="let daytime of selectedSchedule.Daytimes"
+                    (removed)="removeDaytime(daytime)"
+                  >
+                    {{ getTimestamp(daytime) }}
+                    <button matChipRemove>
+                      <mat-icon>cancel</mat-icon>
+                    </button>
+                  </mat-chip>
+                </div>
+                <button
+                  id="btnAddDaytime"
+                  mat-mini-fab
+                  (click)="btnAddDaytime()"
+                >
+                  <mat-icon>add</mat-icon>
+                </button>
+              </div>
+            </div>
+            <input
+              [ngxMatTimepicker]="picker"
+              type="hidden"
+              id="scheduleTimeInput"
+              #scheduleTimeInput
+              [(ngModel)]="myValue"
+              (ngModelChange)="onTimeInput($event)"
+            />
+            <ngx-mat-timepicker #picker></ngx-mat-timepicker>
+          </div>
+        </ng-container>
+      </div>
+
+      <div
+        id="divOnlyWhenEmpty"
+        class="form-group"
+        *ngIf="selectedSchedule.Mode == EScheduleMode.FixedDaytime"
+      >
+        <mat-checkbox
+          class="example-margin"
+          [(ngModel)]="selectedSchedule.OnlyWhenEmpty"
+          >Warten, bis der Fressnapf leer ist</mat-checkbox
+        >
+      </div>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <div id="divFooter">
+      <button
+        mat-raised-button
+        color="basic"
+        id="btnCancel"
+        (click)="btnCancel()"
+      >
+        Abbrechen
+      </button>
+      <button
+        mat-raised-button
+        color="primary"
+        id="btnSave"
+        (click)="btnSave()"
+      >
+        Speichern
+      </button>
+    </div>
+  </ng-template>
+  <ng-template #noScheduleSelected>Kein Futterplan ausgewählt</ng-template>
 </div>
