@@ -9,22 +9,30 @@
       [multiple]="false"
       [hideSingleSelectionIndicator]="true"
     >
-      <mat-list-option
-        *ngFor="let schedule of schedules"
-        [value]="schedule"
-        [ngClass]="{ selected: schedule.Selected }"
-      >
-        {{ schedule.Name }}
-        <span
-          *ngIf="schedule.Selected"
-          style="float: right"
-          [ngClass]="{
-            activeText: schedule.Active,
-            pausedText: !schedule.Active
-          }"
-          >{{ schedule.Active ? "Aktiv" : "Pausiert" }}</span
+      <div *ngFor="let schedule of schedules">
+        <mat-list-option
+          [value]="schedule"
+          [ngClass]="{ selected: schedule.Selected }"
         >
-      </mat-list-option>
+          {{ schedule.Name }}
+          <span
+            *ngIf="schedule.Selected"
+            style="float: right; margin-right: 3em"
+            [ngClass]="{
+              activeText: schedule.Active,
+              pausedText: !schedule.Active
+            }"
+            >{{ schedule.Active ? "Aktiv" : "Pausiert" }}</span
+          >
+        </mat-list-option>
+
+        <span
+          class="listActiveButton"
+          (click)="toggleScheduleActive(schedule, !schedule.Active)"
+          ><mat-icon *ngIf="!schedule.Active">play_arrow</mat-icon>
+          <mat-icon *ngIf="schedule.Active">pause</mat-icon>
+        </span>
+      </div>
     </mat-selection-list>
   </div>
   <ng-template #noSchedule>
@@ -45,17 +53,20 @@
 <div class="section vertical" id="selectedSchedule">
   <ng-template [ngIf]="selectedSchedule" [ngIfElse]="noScheduleSelected">
     <div id="divForm">
-      <input
-        type="hidden"
-        id="scheduleFormID"
-        [(ngModel)]="selectedSchedule.ID"
-      />
-
       <div id="divScheduleBasicData" class="form-group">
         <mat-form-field appearance="fill">
           <mat-label>Name</mat-label>
           <input matInput [(ngModel)]="selectedSchedule.Name" required />
         </mat-form-field>
+        <button
+          *ngIf="selectedSchedule.ID"
+          mat-mini-fab
+          color="warn"
+          id="btnDelete"
+          (click)="openDeleteDialog('0ms', '0ms')"
+        >
+          <mat-icon>delete</mat-icon>
+        </button>
       </div>
       <div id="divScheduleMode" class="form-group">
         <mat-form-field appearance="fill">
@@ -138,7 +149,7 @@
         <mat-checkbox
           class="example-margin"
           [(ngModel)]="selectedSchedule.OnlyWhenEmpty"
-          >Warten, bis der Fressnapf leer ist</mat-checkbox
+          >Warten bis der Fressnapf leer ist</mat-checkbox
         >
       </div>
     </div>

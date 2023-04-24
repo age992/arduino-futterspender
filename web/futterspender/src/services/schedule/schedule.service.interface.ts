@@ -3,9 +3,9 @@ import { ReplaySubject, BehaviorSubject, Observable } from 'rxjs';
 import { Schedule } from 'src/models/Schedule';
 
 export interface IScheduleService {
-  Schedules: ReplaySubject<Schedule[]>;
+  Schedules: BehaviorSubject<Schedule[] | null>;
   Loading: BehaviorSubject<boolean>;
   fetchSchedules(): void;
   upsertSchedule(schedule: Schedule): Observable<HttpResponse<unknown>>;
-  deleteSchedule(schedule: Schedule): void;
+  deleteSchedule(schedule: Schedule): Observable<HttpResponse<unknown>>;
 }

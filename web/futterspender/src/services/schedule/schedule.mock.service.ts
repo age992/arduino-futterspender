@@ -9,7 +9,7 @@ import { schedules } from './MockSchedules';
   providedIn: 'root',
 })
 export class ScheduleMockService implements IScheduleService {
-  Schedules: ReplaySubject<Schedule[]> = new ReplaySubject();
+  Schedules = new BehaviorSubject<Schedule[] | null>(null);
   Loading: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
   private schedulesInternal: Schedule[] = [];
@@ -23,26 +23,29 @@ export class ScheduleMockService implements IScheduleService {
   };
 
   upsertSchedule(schedule: Schedule): Observable<HttpResponse<unknown>> {
-    const isUpdate = schedule.ID;
+    const clonedSchedule = structuredClone(schedule);
+    if (!clonedSchedule.ID) {
+      clonedSchedule.ID = this.getNewScheduleID();
+    }
 
     const callback: Observable<HttpResponse<unknown>> = new Observable(
       (subscriber) => {
         setTimeout(() => {
           subscriber.next(new HttpResponse({ status: 200 }));
           subscriber.complete();
-        }, 1000);
+        }, 100);
       }
     );
 
     callback.subscribe((response) => {
       if (response.status == 200) {
-        let i = !isUpdate
-          ? -1
-          : this.schedulesInternal.findIndex((s) => s.ID == schedule.ID);
+        let i = this.schedulesInternal.findIndex(
+          (s) => s.ID == clonedSchedule.ID
+        );
         if (i != -1) {
-          this.schedulesInternal[i] = schedule;
+          this.schedulesInternal[i] = clonedSchedule;
         } else {
-          this.schedulesInternal.push(schedule);
+          this.schedulesInternal.push(clonedSchedule);
         }
         this.notify();
       }

@@ -41,6 +41,10 @@ export class DashboardComponent implements OnInit {
     });
 
     this.scheduleService.Schedules.subscribe((s) => {
+      if (!s) {
+        return;
+      }
+
       for (let schedule of s) {
         if (schedule.Selected) {
           this.currentSchedule = schedule;

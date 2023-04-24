@@ -1,10 +1,12 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import { Location } from '@angular/common';
 import { Schedule } from 'src/models/Schedule';
 import { ScheduleService } from 'src/services/schedule/schedule.service';
 import { EScheduleMode } from '../lib/EScheduleMode';
 import { FormControl } from '@angular/forms';
 import { getTimestamp, timePickerToUnix } from '../lib/DateConverter';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { ConfirmationDialogComponent } from '../common/confirmation-dialog/confirmation-dialog.component';
 
 @Component({
   selector: 'app-schedules',
@@ -31,7 +33,8 @@ export class SchedulesComponent implements OnInit {
 
   constructor(
     private location: Location,
-    public scheduleService: ScheduleService
+    public scheduleService: ScheduleService,
+    public dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -40,6 +43,9 @@ export class SchedulesComponent implements OnInit {
     );
 
     this.scheduleService.Schedules.subscribe((s) => {
+      if (!s) {
+        return;
+      }
       this.schedules = s;
       if (!this.selectedSchedule) {
         const selected = this.schedules.find((s) => s.Selected);
@@ -60,6 +66,29 @@ export class SchedulesComponent implements OnInit {
       : null;
   };
 
+  toggleScheduleActive(schedule: Schedule, active: boolean) {
+    const updateSchedule = structuredClone(schedule);
+    updateSchedule.Active = active;
+    updateSchedule.Selected = true;
+    const lastSelected = this.schedules.find((s) => s.Selected);
+
+    if (lastSelected && lastSelected.ID != updateSchedule.ID) {
+      lastSelected.Selected = false;
+      lastSelected.Active = false;
+      this.scheduleService.upsertSchedule(lastSelected).subscribe((r) => {
+        if (r.status == 200) {
+          this.scheduleService.upsertSchedule(updateSchedule).subscribe((r) => {
+            if (r.status == 200) {
+              this.schedulesListControl.setValue([updateSchedule]);
+            }
+          });
+        }
+      });
+    } else {
+      this.scheduleService.upsertSchedule(updateSchedule);
+    }
+  }
+
   onMaxTimesChanged = (newValue: number) => {
     if (this.selectedSchedule) {
       this.selectedSchedule.MaxTimes = newValue;
@@ -67,9 +96,43 @@ export class SchedulesComponent implements OnInit {
   };
 
   btnAdd = () => {
-    console.log('new');
     this.schedulesListControl.setValue([]);
     this.selectedSchedule = {};
+  };
+
+  openDeleteDialog(
+    enterAnimationDuration: string,
+    exitAnimationDuration: string
+  ): void {
+    const header =
+      'Futterplan "' + this.selectedSchedule?.Name + '" wirklich löschen?';
+
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      width: '250px',
+      enterAnimationDuration,
+      exitAnimationDuration,
+      data: { header: header },
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.btnDelete();
+      }
+    });
+  }
+
+  btnDelete = () => {
+    if (!this.selectedSchedule) {
+      return;
+    }
+    console.log('delete');
+    this.scheduleService
+      .deleteSchedule(this.selectedSchedule)
+      .subscribe((r) => {
+        if (r.status == 200) {
+          this.schedulesListControl.setValue([]);
+        }
+      });
   };
 
   btnCancel = () => {
@@ -80,13 +143,14 @@ export class SchedulesComponent implements OnInit {
     if (!this.selectedSchedule) {
       return;
     }
-    console.log('Save schedule...');
 
     this.scheduleService
       .upsertSchedule(this.selectedSchedule)
       .subscribe((r) => {
         if (r.status == 200) {
-          this.schedulesListControl.setValue([]);
+          if (!this.selectedSchedule?.ID) {
+            this.schedulesListControl.setValue([]);
+          }
           console.log('Success!');
         } else {
           console.log('Error warning!');

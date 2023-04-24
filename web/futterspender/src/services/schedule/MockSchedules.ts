@@ -7,7 +7,7 @@ const d3 = new Date('1970-01-01T19:30:00.000Z').getTime();
 
 export const schedules: Schedule[] = [
   {
-    ID: 0,
+    ID: 1,
     Name: 'Fritzchen Ferien',
     Active: false,
     Selected: false,
@@ -16,7 +16,7 @@ export const schedules: Schedule[] = [
     MaxTimes: 3,
   },
   {
-    ID: 1,
+    ID: 2,
     Name: 'Fritzchen Normal',
     Active: true,
     Selected: true,

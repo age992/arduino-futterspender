@@ -10,6 +10,19 @@
   #divScheduleList {
     width: 100%;
 
+    mat-list-option {
+      position: relative;
+      z-index: 1;
+    }
+
+    .listActiveButton {
+      right: 1em;
+      width: 2em;
+      position: absolute;
+      transform: translateY(-35px);
+      z-index: 9999;
+    }
+
     .selected {
       border-style: solid none solid none;
       border-radius: 1px;
@@ -40,6 +53,10 @@
   #divForm {
     height: 80%;
     width: 100%;
+
+    #btnDelete {
+      float: right;
+    }
 
     #dayTimesWrapper {
       display: inline-flex;

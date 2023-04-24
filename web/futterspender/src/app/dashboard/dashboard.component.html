@@ -20,17 +20,14 @@
             <div>
               Maximal {{ currentSchedule.MaxTimes }} Fütterungen pro Tag
             </div>
-            <div *ngIf="currentSchedule.OnlyWhenEmpty">
-              Warten, bis der Fressnapf leer ist
-            </div>
           </div>
           <div
             *ngSwitchCase="currentSchedule.Mode == EScheduleMode.FixedDaytime"
           >
             <div>Typ: Nach Uhrzeit</div>
             <div *ngIf="currentSchedule.Daytimes">
-              <div>Wann:</div>
               <div>
+                <span>Wann: </span>
                 <span
                   *ngFor="let date of currentSchedule.Daytimes; let i = index"
                   >{{ getTimestamp(date)
@@ -41,17 +38,23 @@
               </div>
             </div>
             <div *ngIf="currentSchedule.OnlyWhenEmpty">
-              Warten, bis der Fressnapf leer ist
+              Warten bis der Fressnapf leer ist
             </div>
           </div>
         </ng-container>
       </div>
     </div>
     <mat-divider></mat-divider>
-    <div>
+    <div *ngIf="nextFeedingTime">
       <span>Nächste Fütterung</span>
       <div id="foodPlanTime">
-        {{ nextFeedingTime ? getTimestamp(nextFeedingTime) : "-" }}
+        {{ getTimestamp(nextFeedingTime) }}
+      </div>
+    </div>
+    <div *ngIf="currentSchedule && currentSchedule.Mode == EScheduleMode.Max">
+      <span>Verbleinde Fütterungen</span>
+      <div id="foodPlanTime">
+        {{ currentSchedule.MaxTimes }}
       </div>
     </div>
 
@@ -75,7 +78,7 @@
   </ng-template>
   <ng-template #noScheduleData>
     <ng-template [ngIf]="!LoadingSchedule" [ngIfElse]="LoadingScheduleSpinner">
-      <label>Keine Futterpläne</label>
+      <label>Kein aktiver Futterplan</label>
     </ng-template>
     <ng-template #LoadingScheduleSpinner>
       <mat-spinner diameter="20"></mat-spinner>

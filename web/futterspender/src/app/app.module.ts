@@ -22,6 +22,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { CounterComponent } from './counter/counter.component';
 import { NgxMatTimepickerModule } from 'ngx-mat-timepicker';
 import { MatChipsModule } from '@angular/material/chips';
+import { ConfirmationDialogComponent } from './common/confirmation-dialog/confirmation-dialog.component';
+import { MatDialogModule } from '@angular/material/dialog';
 
 @NgModule({
   declarations: [
@@ -31,6 +33,7 @@ import { MatChipsModule } from '@angular/material/chips';
     SchedulesComponent,
     HistoryComponent,
     CounterComponent,
+    ConfirmationDialogComponent,
   ],
   imports: [
     BrowserModule,
@@ -50,6 +53,7 @@ import { MatChipsModule } from '@angular/material/chips';
     MatCheckboxModule,
     NgxMatTimepickerModule,
     MatChipsModule,
+    MatDialogModule,
   ],
   providers: [...environment.providers],
   bootstrap: [AppComponent],
