@@ -1,10 +1,183 @@
-<div class="section vertical" id="divSettings"></div>
+<div *ngIf="SavingSettings" id="divSaveOverlay">
+  <mat-spinner diameter="50"></mat-spinner>
+</div>
+
+<div
+  class="section vertical"
+  [ngClass]="{ start: !FetchingSettings }"
+  id="divSettings"
+>
+  <div *ngIf="FetchingSettings; else settingsForm">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+  <ng-template #settingsForm>
+    <ng-container *ngIf="settings">
+      <div class="row">
+        <mat-form-field appearance="outline">
+          <mat-label>Name des Haustiers</mat-label>
+          <input matInput [(ngModel)]="settings.PetName" required />
+        </mat-form-field>
+
+        <button id="btnHelp" mat-fab color="basic" (click)="btnHelp()">
+          <mat-icon>help_outline</mat-icon>
+        </button>
+      </div>
+      <mat-divider></mat-divider>
+      <div class="row vertical">
+        <mat-label class="subheader">Futterschale</mat-label>
+        <div class="row">
+          <mat-form-field appearance="fill" style="margin-right: 1em">
+            <mat-label>TAR</mat-label>
+            <input matInput [(ngModel)]="settings.PlateTAR" required />
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Füllmenge</mat-label>
+            <input matInput [(ngModel)]="settings.PlateFilling" required />
+          </mat-form-field>
+        </div>
+      </div>
+      <mat-divider></mat-divider>
+      <div class="row vertical">
+        <mat-label class="subheader">Benachrichtige mich wenn...</mat-label>
+        <div class="row">
+          <mat-checkbox
+            class="notificationDesc"
+            [(ngModel)]="settings.Notifications.ContainerEmpty.Active"
+            >der Futterbehälter leer ist</mat-checkbox
+          >
+          <mat-button-toggle-group
+            [disabled]="!settings.Notifications.ContainerEmpty.Active"
+            name="channels"
+            aria-label="channels"
+            multiple
+          >
+            <mat-button-toggle
+              [checked]="settings.Notifications.ContainerEmpty.Email"
+              (change)="
+                settings.Notifications.ContainerEmpty.Email =
+                  $event.source.checked
+              "
+              ><mat-icon>email</mat-icon></mat-button-toggle
+            >
+            <mat-button-toggle
+              [checked]="settings.Notifications.ContainerEmpty.Phone"
+              (change)="
+                settings.Notifications.ContainerEmpty.Phone =
+                  $event.source.checked
+              "
+            >
+              <mat-icon>phone</mat-icon></mat-button-toggle
+            >
+          </mat-button-toggle-group>
+        </div>
+        <div class="row" style="padding-bottom: 1em">
+          <mat-checkbox
+            class="notificationDesc"
+            [(ngModel)]="settings.Notifications.DidNotEatInADay.Active"
+          >
+            mein Haustier einen Tag lang nichts isst</mat-checkbox
+          >
+          <mat-button-toggle-group
+            [disabled]="!settings.Notifications.DidNotEatInADay.Active"
+            name="channels"
+            aria-label="channels"
+            multiple
+          >
+            <mat-button-toggle
+              [checked]="settings.Notifications.DidNotEatInADay.Email"
+              (change)="
+                settings.Notifications.DidNotEatInADay.Email =
+                  $event.source.checked
+              "
+              ><mat-icon>email</mat-icon></mat-button-toggle
+            >
+            <mat-button-toggle
+              [checked]="settings.Notifications.DidNotEatInADay.Phone"
+              (change)="
+                settings.Notifications.DidNotEatInADay.Phone =
+                  $event.source.checked
+              "
+            >
+              <mat-icon>phone</mat-icon></mat-button-toggle
+            >
+          </mat-button-toggle-group>
+        </div>
+      </div>
+      <div class="row">
+        <mat-form-field appearance="fill" style="margin-right: 1em">
+          <mat-label>Email-Adresse</mat-label>
+          <input matInput [(ngModel)]="settings.Email" type="email" />
+          <mat-icon matSuffix>email</mat-icon>
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+          <mat-label>Telefon-Nummer</mat-label>
+          <input matInput [(ngModel)]="settings.Phone" type="tel" />
+          <mat-icon matSuffix>phone</mat-icon>
+        </mat-form-field>
+      </div>
+      <mat-divider></mat-divider>
+      <div class="row">
+        <div class="row vertical" style="width: 50%">
+          <mat-form-field appearance="fill" style="margin-right: 1em">
+            <mat-label>Sprache</mat-label>
+            <mat-select
+              id="language"
+              required
+              [(ngModel)]="settings.Language"
+              name="language"
+            >
+              <mat-option
+                *ngFor="let languageID of languageIDs"
+                [value]="languageID"
+              >
+                <ng-container [ngSwitch]="true">
+                  <div *ngSwitchCase="languageID == ELanguage.German">
+                    Deutsch
+                  </div>
+                  <div *ngSwitchCase="languageID == ELanguage.English">
+                    Englisch
+                  </div>
+                </ng-container>
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="row vertical" style="width: 50%">
+          <mat-form-field appearance="fill">
+            <mat-label>Theme</mat-label>
+            <mat-select
+              id="theme"
+              required
+              [(ngModel)]="settings.Theme"
+              name="theme"
+            >
+              <mat-option *ngFor="let themeID of themeIDs" [value]="themeID">
+                <ng-container [ngSwitch]="true">
+                  <div *ngSwitchCase="themeID == ETheme.Boring">Langweilig</div>
+                  <div *ngSwitchCase="themeID == ETheme.Tiger">Tiger</div>
+                  <div *ngSwitchCase="themeID == ETheme.Cute">Schnuki</div>
+                </ng-container>
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+    </ng-container>
+    <ng-container *ngIf="!settings">Fehler</ng-container>
+  </ng-template>
+</div>
 <mat-divider></mat-divider>
 <div id="divFooter">
   <button mat-raised-button color="basic" id="btnCancel" (click)="navBack()">
     Abbrechen
   </button>
-  <button mat-raised-button color="primary" id="btnSave" (click)="save()">
+  <button
+    mat-raised-button
+    color="primary"
+    id="btnSave"
+    (click)="save()"
+    [disabled]="!settings"
+  >
     Speichern
   </button>
 </div>

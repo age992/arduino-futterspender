@@ -25,6 +25,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { ConfirmationDialogComponent } from './common/confirmation-dialog/confirmation-dialog.component';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 
 @NgModule({
   declarations: [
@@ -56,6 +57,7 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
     MatChipsModule,
     MatDialogModule,
     MatSnackBarModule,
+    MatButtonToggleModule,
   ],
   providers: [...environment.providers],
   bootstrap: [AppComponent],

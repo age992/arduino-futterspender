@@ -1,13 +1,17 @@
+import { ELanguage } from 'src/app/lib/ELanguage';
+import { ETheme } from 'src/app/lib/ETheme';
+import { Notification } from './Notification';
+
 export interface Settings {
-  PetName: String;
-  Email: String;
-  Phone: String;
+  PetName?: String;
+  PlateTAR?: Number;
+  PlateFilling?: Number;
   Notifications: {
     ContainerEmpty: Notification;
     DidNotEatInADay: Notification;
   };
-  PlateTAR: Number;
-  PlateFilling: Number;
-  Language: String;
-  Theme: String;
+  Email?: String;
+  Phone?: String;
+  Language: ELanguage;
+  Theme: ETheme;
 }

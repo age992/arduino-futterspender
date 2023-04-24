@@ -4,6 +4,8 @@ import { RouterOutlet } from '@angular/router';
 import { slider } from '../animations/Slider';
 import { StatusService } from 'src/services/status/status.service';
 import { MachineStatus } from 'src/models/MachineStatus';
+import { ScheduleService } from 'src/services/schedule/schedule.service';
+import { SettingsService } from 'src/services/settings/settings.service';
 
 @Component({
   selector: 'app-root',
@@ -17,7 +19,11 @@ export class AppComponent implements OnInit {
   public Loading: boolean = false;
   public Connected: boolean = true;
 
-  constructor(public statusService: StatusService) {}
+  constructor(
+    public statusService: StatusService,
+    private scheduleService: ScheduleService,
+    private settingsService: SettingsService
+  ) {}
 
   ngOnInit(): void {
     this.statusService.MachineStatus.subscribe((m) => {

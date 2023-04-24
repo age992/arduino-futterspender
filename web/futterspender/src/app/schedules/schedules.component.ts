@@ -16,13 +16,12 @@ import { MatSnackBar, MatSnackBarRef } from '@angular/material/snack-bar';
 })
 export class SchedulesComponent implements OnInit {
   public EScheduleMode: typeof EScheduleMode = EScheduleMode;
-  public getTimestamp = getTimestamp;
-  public timePickerToUnix = timePickerToUnix;
-
   public modeIDs = Object.keys(EScheduleMode)
     .filter((key) => !isNaN(Number(key)))
     .map((key: string) => Number(key));
-  public dayTimes: number[] = [1291410984924091];
+
+  public getTimestamp = getTimestamp;
+  public timePickerToUnix = timePickerToUnix;
 
   public schedulesListControl = new FormControl();
 

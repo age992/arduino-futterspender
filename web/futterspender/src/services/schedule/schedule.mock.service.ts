@@ -80,7 +80,7 @@ export class ScheduleMockService implements IScheduleService {
   }
 
   fetchSchedules = () => {
-    console.log('Update schedules...');
+    console.log('Fetch schedules...');
     this.FetchingSchedules.next(true);
     setTimeout(() => {
       this.schedulesInternal = schedules;

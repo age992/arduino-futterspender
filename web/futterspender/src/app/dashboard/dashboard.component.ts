@@ -5,6 +5,8 @@ import { ScheduleService } from 'src/services/schedule/schedule.service';
 import { StatusService } from 'src/services/status/status.service';
 import { EScheduleMode } from 'src/app/lib/EScheduleMode';
 import { getTimestamp } from 'src/app/lib/DateConverter';
+import { SettingsService } from 'src/services/settings/settings.service';
+import { Settings } from 'src/models/Settings';
 
 @Component({
   selector: 'dashboard',
@@ -19,6 +21,9 @@ export class DashboardComponent implements OnInit {
   public LoadingStatus: boolean = false;
   public Connected: boolean = true;
 
+  public settings: Settings | null = null;
+  public FetchingSettings = false;
+
   public currentSchedule: Schedule | null = null;
   public nextFeedingTime: number | null = null;
   public FetchingSchedule: boolean = false;
@@ -26,7 +31,8 @@ export class DashboardComponent implements OnInit {
 
   constructor(
     private statusService: StatusService,
-    private scheduleService: ScheduleService
+    private scheduleService: ScheduleService,
+    private settingsService: SettingsService
   ) {}
 
   ngOnInit(): void {
@@ -39,6 +45,11 @@ export class DashboardComponent implements OnInit {
     this.statusService.Connected.subscribe((c) => {
       this.Connected = c;
     });
+
+    this.settingsService.Settings.subscribe((s) => (this.settings = s));
+    this.settingsService.FetchingSettings.subscribe(
+      (f) => (this.FetchingSettings = f)
+    );
 
     this.scheduleService.Schedules.subscribe((s) => {
       if (!s) {
