@@ -21,7 +21,7 @@ export class DashboardComponent implements OnInit {
 
   public currentSchedule: Schedule | null = null;
   public nextFeedingTime: number | null = null;
-  public LoadingSchedule: boolean = false;
+  public FetchingSchedule: boolean = false;
   public UpdatingActivity: boolean = false;
 
   constructor(
@@ -68,8 +68,8 @@ export class DashboardComponent implements OnInit {
       }
     });
 
-    this.scheduleService.Loading.subscribe((l) => {
-      this.LoadingSchedule = l;
+    this.scheduleService.FetchingSchedules.subscribe((l) => {
+      this.FetchingSchedule = l;
     });
   }
 

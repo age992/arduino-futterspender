@@ -8,5 +8,6 @@ export interface Schedule {
   Mode?: EScheduleMode;
   Daytimes?: number[];
   MaxTimes?: number;
+  MaxTimesStartTime?: number;
   OnlyWhenEmpty?: boolean;
 }

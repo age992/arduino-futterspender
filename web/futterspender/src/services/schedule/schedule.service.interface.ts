@@ -4,7 +4,7 @@ import { Schedule } from 'src/models/Schedule';
 
 export interface IScheduleService {
   Schedules: BehaviorSubject<Schedule[] | null>;
-  Loading: BehaviorSubject<boolean>;
+  FetchingSchedules: BehaviorSubject<boolean>;
   fetchSchedules(): void;
   upsertSchedule(schedule: Schedule): Observable<HttpResponse<unknown>>;
   deleteSchedule(schedule: Schedule): Observable<HttpResponse<unknown>>;

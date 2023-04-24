@@ -20,6 +20,9 @@
             <div>
               Maximal {{ currentSchedule.MaxTimes }} Fütterungen pro Tag
             </div>
+            <div>
+              Start: {{ getTimestamp(currentSchedule.MaxTimesStartTime!) }}
+            </div>
           </div>
           <div
             *ngSwitchCase="currentSchedule.Mode == EScheduleMode.FixedDaytime"
@@ -45,19 +48,22 @@
       </div>
     </div>
     <mat-divider></mat-divider>
-    <div *ngIf="nextFeedingTime">
-      <span>Nächste Fütterung</span>
-      <div id="foodPlanTime">
-        {{ getTimestamp(nextFeedingTime) }}
-      </div>
+    <div id="foodPlanTime">
+      <ng-container *ngIf="nextFeedingTime">
+        <span>Nächste Fütterung</span>
+        <div id="divFoodPlanNextValue">
+          {{ getTimestamp(nextFeedingTime) }}
+        </div>
+      </ng-container>
+      <ng-container
+        *ngIf="currentSchedule && currentSchedule.Mode == EScheduleMode.Max"
+      >
+        <span>Verbleinde Fütterungen</span>
+        <div id="divFoodPlanNextValue">
+          {{ currentSchedule.MaxTimes }}
+        </div>
+      </ng-container>
     </div>
-    <div *ngIf="currentSchedule && currentSchedule.Mode == EScheduleMode.Max">
-      <span>Verbleinde Fütterungen</span>
-      <div id="foodPlanTime">
-        {{ currentSchedule.MaxTimes }}
-      </div>
-    </div>
-
     <ng-template [ngIf]="!UpdatingActivity" [ngIfElse]="activityUpdating">
       <ng-template [ngIf]="currentSchedule.Active" [ngIfElse]="showPlayButton">
         <button mat-fab color="basic" (click)="toggleScheduleActive(false)">
@@ -77,7 +83,7 @@
     </ng-template>
   </ng-template>
   <ng-template #noScheduleData>
-    <ng-template [ngIf]="!LoadingSchedule" [ngIfElse]="LoadingScheduleSpinner">
+    <ng-template [ngIf]="!FetchingSchedule" [ngIfElse]="LoadingScheduleSpinner">
       <label>Kein aktiver Futterplan</label>
     </ng-template>
     <ng-template #LoadingScheduleSpinner>

@@ -14,6 +14,7 @@ export const schedules: Schedule[] = [
     Mode: EScheduleMode.Max,
     OnlyWhenEmpty: true,
     MaxTimes: 3,
+    MaxTimesStartTime: d1,
   },
   {
     ID: 2,
@@ -25,3 +26,5 @@ export const schedules: Schedule[] = [
     Daytimes: [d1, d2, d3],
   },
 ];
+
+//export const schedules: Schedule[] = [];

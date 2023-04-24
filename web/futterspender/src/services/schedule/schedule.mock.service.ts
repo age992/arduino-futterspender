@@ -10,7 +10,7 @@ import { schedules } from './MockSchedules';
 })
 export class ScheduleMockService implements IScheduleService {
   Schedules = new BehaviorSubject<Schedule[] | null>(null);
-  Loading: BehaviorSubject<boolean> = new BehaviorSubject(false);
+  FetchingSchedules: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
   private schedulesInternal: Schedule[] = [];
 
@@ -33,7 +33,7 @@ export class ScheduleMockService implements IScheduleService {
         setTimeout(() => {
           subscriber.next(new HttpResponse({ status: 200 }));
           subscriber.complete();
-        }, 100);
+        }, 2000);
       }
     );
 
@@ -81,17 +81,18 @@ export class ScheduleMockService implements IScheduleService {
 
   fetchSchedules = () => {
     console.log('Update schedules...');
-    this.Loading.next(true);
+    this.FetchingSchedules.next(true);
     setTimeout(() => {
       this.schedulesInternal = schedules;
-      this.Loading.next(false);
+      this.FetchingSchedules.next(false);
       this.notify();
     }, 2500);
   };
 
   private getNewScheduleID = () => {
     const IDs = this.schedulesInternal.map((s) => s.ID);
-    IDs.sort((s1, s2) => (s1 as number) - (s2 as number));
-    return (IDs[IDs.length - 1] as number) + 1;
+    IDs.sort();
+    let lastID = IDs[IDs.length - 1];
+    return !lastID ? 1 : lastID + 1;
   };
 }

@@ -9,7 +9,7 @@ import { HttpResponse } from '@angular/common/http';
 })
 export class ScheduleService implements IScheduleService {
   Schedules = new BehaviorSubject<Schedule[] | null>(null);
-  Loading: BehaviorSubject<boolean> = new BehaviorSubject(false);
+  FetchingSchedules: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
   constructor() {}
   upsertSchedule(schedule: Schedule): Observable<HttpResponse<unknown>> {

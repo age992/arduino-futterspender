@@ -7,6 +7,7 @@ import { FormControl } from '@angular/forms';
 import { getTimestamp, timePickerToUnix } from '../lib/DateConverter';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../common/confirmation-dialog/confirmation-dialog.component';
+import { MatSnackBar, MatSnackBarRef } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-schedules',
@@ -24,17 +25,27 @@ export class SchedulesComponent implements OnInit {
   public dayTimes: number[] = [1291410984924091];
 
   public schedulesListControl = new FormControl();
-  @ViewChild('scheduleTimeInput', { static: false }) timeInput!: ElementRef;
-  public myValue: string = '';
+
+  @ViewChild('scheduleDayTimeInput', { static: false })
+  dayTimesInput!: ElementRef;
+  public dayTimesPickerOutput: string = '';
+
+  @ViewChild('inpMaxTimesStart', { static: false })
+  maxTimesStartInput!: ElementRef;
+  public maxTimesStartPickerOutput: string = '';
 
   public schedules: Schedule[] = [];
-  public Loading: boolean = true;
+  public FetchingSchedules: boolean = true;
   public selectedSchedule: Schedule | null = null;
+
+  public toggledScheduleID: number | undefined = undefined;
+  public saveOrDeletingSchedule = false;
 
   constructor(
     private location: Location,
     public scheduleService: ScheduleService,
-    public dialog: MatDialog
+    public dialog: MatDialog,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -54,8 +65,8 @@ export class SchedulesComponent implements OnInit {
         }
       }
     });
-    this.scheduleService.Loading.subscribe((l) => {
-      this.Loading = l;
+    this.scheduleService.FetchingSchedules.subscribe((f) => {
+      this.FetchingSchedules = f;
     });
   }
 
@@ -67,7 +78,11 @@ export class SchedulesComponent implements OnInit {
   };
 
   toggleScheduleActive(schedule: Schedule, active: boolean) {
+    if (this.toggledScheduleID) {
+      return;
+    }
     const updateSchedule = structuredClone(schedule);
+    this.toggledScheduleID = updateSchedule.ID;
     updateSchedule.Active = active;
     updateSchedule.Selected = true;
     const lastSelected = this.schedules.find((s) => s.Selected);
@@ -79,13 +94,18 @@ export class SchedulesComponent implements OnInit {
         if (r.status == 200) {
           this.scheduleService.upsertSchedule(updateSchedule).subscribe((r) => {
             if (r.status == 200) {
+              this.toggledScheduleID = undefined;
               this.schedulesListControl.setValue([updateSchedule]);
             }
           });
+        } else {
+          this.toggledScheduleID = undefined;
         }
       });
     } else {
-      this.scheduleService.upsertSchedule(updateSchedule);
+      this.scheduleService
+        .upsertSchedule(updateSchedule)
+        .subscribe((r) => (this.toggledScheduleID = undefined));
     }
   }
 
@@ -97,7 +117,13 @@ export class SchedulesComponent implements OnInit {
 
   btnAdd = () => {
     this.schedulesListControl.setValue([]);
-    this.selectedSchedule = {};
+    this.selectedSchedule = {
+      Active: false,
+      Selected: false,
+      OnlyWhenEmpty: false,
+      MaxTimes: 1,
+      MaxTimesStartTime: 0,
+    };
   };
 
   openDeleteDialog(
@@ -116,22 +142,30 @@ export class SchedulesComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.btnDelete();
+        this.deleteSchedule();
       }
     });
   }
 
-  btnDelete = () => {
+  openSnackBar(message: string) {
+    this.snackBar.open(message, 'Ok', { duration: 2000 });
+  }
+
+  deleteSchedule = () => {
     if (!this.selectedSchedule) {
       return;
     }
-    console.log('delete');
+    this.saveOrDeletingSchedule = true;
     this.scheduleService
       .deleteSchedule(this.selectedSchedule)
       .subscribe((r) => {
         if (r.status == 200) {
+          this.openSnackBar('Gelöscht!');
           this.schedulesListControl.setValue([]);
+        } else {
+          this.openSnackBar('Fehler beim Löschen des Futterplans!');
         }
+        this.saveOrDeletingSchedule = false;
       });
   };
 
@@ -144,25 +178,64 @@ export class SchedulesComponent implements OnInit {
       return;
     }
 
+    if (!this.validateSchedule(this.selectedSchedule)) {
+      this.openSnackBar('Bitte fülle alle Pflichtfelder aus!');
+      return;
+    }
+
+    this.saveOrDeletingSchedule = true;
     this.scheduleService
       .upsertSchedule(this.selectedSchedule)
       .subscribe((r) => {
         if (r.status == 200) {
-          if (!this.selectedSchedule?.ID) {
-            this.schedulesListControl.setValue([]);
-          }
-          console.log('Success!');
+          this.schedulesListControl.setValue([]);
+          this.openSnackBar('Gespeichert!');
         } else {
-          console.log('Error warning!');
+          this.openSnackBar('Fehler beim Speichern der Änderungen!');
         }
+        this.saveOrDeletingSchedule = false;
       });
   };
 
-  btnAddDaytime = () => {
-    this.timeInput.nativeElement.click();
+  validateSchedule = (schedule: Schedule) => {
+    let valid = false;
+    console.log(schedule);
+    switch (true) {
+      case schedule.Mode == EScheduleMode.Max:
+        valid =
+          !!schedule.Name &&
+          !!schedule.MaxTimes &&
+          schedule.MaxTimesStartTime != undefined;
+        break;
+      case schedule.Mode == EScheduleMode.FixedDaytime:
+        valid =
+          !!schedule.Name &&
+          !!schedule.Daytimes &&
+          schedule.Daytimes.length > 0;
+        break;
+    }
+
+    return valid;
   };
 
-  onTimeInput = (e: any) => {
+  onMaxTimeStartInput = (e: any) => {
+    if (!this.selectedSchedule) {
+      return;
+    }
+
+    const unix = timePickerToUnix(this.maxTimesStartPickerOutput);
+    this.selectedSchedule.MaxTimesStartTime = unix;
+  };
+
+  onMaxTimeStartDisplayClick = (e: any) => {
+    this.maxTimesStartInput.nativeElement.click();
+  };
+
+  btnAddDaytime = () => {
+    this.dayTimesInput.nativeElement.click();
+  };
+
+  onDayTimeInput = (e: any) => {
     if (!this.selectedSchedule) {
       return;
     }
@@ -171,9 +244,9 @@ export class SchedulesComponent implements OnInit {
       this.selectedSchedule.Daytimes = [];
     }
 
-    const newDaytimeString = this.timeInput.nativeElement.value;
+    const newDaytimeString = this.dayTimesInput.nativeElement.value;
     const date = timePickerToUnix(newDaytimeString);
-    if (!isNaN(date)) {
+    if (!isNaN(date) && !this.selectedSchedule.Daytimes.includes(date)) {
       this.selectedSchedule.Daytimes.push(date);
       this.selectedSchedule.Daytimes.sort();
     }

@@ -1,8 +1,5 @@
-<div
-  class="section"
-  [ngClass]="{ list: schedules.length > 0 }"
-  id="divSchedules"
->
+<div class="section vertical" id="divSchedules">
+  <h4>Futterpläne</h4>
   <div id="divScheduleList" *ngIf="schedules.length > 0; else noSchedule">
     <mat-selection-list
       [formControl]="schedulesListControl"
@@ -29,29 +26,50 @@
         <span
           class="listActiveButton"
           (click)="toggleScheduleActive(schedule, !schedule.Active)"
-          ><mat-icon *ngIf="!schedule.Active">play_arrow</mat-icon>
-          <mat-icon *ngIf="schedule.Active">pause</mat-icon>
+        >
+          <ng-container
+            *ngIf="toggledScheduleID == schedule.ID; else playSchedule"
+          >
+            <mat-spinner diameter="20"></mat-spinner>
+          </ng-container>
+          <ng-template #playSchedule>
+            <ng-container *ngIf="!schedule.Active; else pauseSchedule">
+              <mat-icon>play_arrow</mat-icon></ng-container
+            >
+          </ng-template>
+          <ng-template #pauseSchedule> <mat-icon>pause</mat-icon></ng-template>
         </span>
       </div>
     </mat-selection-list>
   </div>
   <ng-template #noSchedule>
-    <ng-template [ngIf]="!Loading" [ngIfElse]="LoadingSchedules">
-      <div id="divNoSchedule">Keine Futterpläne</div>
+    <ng-template [ngIf]="!FetchingSchedules" [ngIfElse]="LoadingSchedules">
+      <span>Keine Futterpläne</span>
     </ng-template>
     <ng-template #LoadingSchedules>
       <mat-spinner diameter="20"></mat-spinner>
     </ng-template>
   </ng-template>
-  <button id="btnAdd" mat-fab color="basic" (click)="btnAdd()">
+  <button
+    id="btnAdd"
+    mat-fab
+    color="basic"
+    (click)="btnAdd()"
+    disabled="{{ FetchingSchedules }}"
+  >
     <mat-icon>add</mat-icon>
   </button>
   <a (click)="navBack()" class="navVertical left" matRipple>
     <mat-icon>navigate_before</mat-icon>
   </a>
 </div>
+
 <div class="section vertical" id="selectedSchedule">
   <ng-template [ngIf]="selectedSchedule" [ngIfElse]="noScheduleSelected">
+    <div id="divSaveOrDeleteOverlay" *ngIf="saveOrDeletingSchedule">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+
     <div id="divForm">
       <div id="divScheduleBasicData" class="form-group">
         <mat-form-field appearance="fill">
@@ -92,21 +110,47 @@
 
         <ng-container [ngSwitch]="true">
           <div *ngSwitchCase="selectedSchedule.Mode == EScheduleMode.Max">
-            <app-counter
-              [value]="selectedSchedule.MaxTimes || 0"
-              [step]="1"
-              [min]="0"
-              [max]="99"
-              [wrap]="false"
-              (valueChanged)="onMaxTimesChanged($event)"
-            >
-            </app-counter>
+            <div id="divMaxTimes">
+              <app-counter
+                [value]="selectedSchedule.MaxTimes!"
+                [step]="1"
+                [min]="1"
+                [max]="99"
+                [wrap]="false"
+                (valueChanged)="onMaxTimesChanged($event)"
+              >
+              </app-counter>
+              <mat-form-field appearance="fill">
+                <mat-label>Start</mat-label>
+                <input
+                  matInput
+                  #inpMaxTimeStartDisplay
+                  id="inpMaxTimeStartDisplay"
+                  value="{{
+                    getTimestamp(selectedSchedule.MaxTimesStartTime!)
+                  }}"
+                  (click)="onMaxTimeStartDisplayClick($event)"
+                />
+              </mat-form-field>
+              <input
+                [(ngModel)]="maxTimesStartPickerOutput"
+                (ngModelChange)="onMaxTimeStartInput($event)"
+                [ngxMatTimepicker]="pickerStartTime"
+                id="inpMaxTimesStart"
+                #inpMaxTimesStart
+                type="hidden"
+                [format]="24"
+                [value]="getTimestamp(selectedSchedule.MaxTimesStartTime!)"
+                required
+              />
+              <ngx-mat-timepicker #pickerStartTime></ngx-mat-timepicker>
+            </div>
           </div>
           <div
             *ngSwitchCase="selectedSchedule.Mode == EScheduleMode.FixedDaytime"
           >
             <div>
-              <mat-label>Uhrzeiten</mat-label>
+              <mat-label>Uhrzeiten*</mat-label>
               <div id="dayTimesWrapper">
                 <div id="dayTimesListWrapper">
                   <mat-chip
@@ -129,14 +173,15 @@
               </div>
             </div>
             <input
-              [ngxMatTimepicker]="picker"
+              [ngxMatTimepicker]="dayTimesPicker"
               type="hidden"
-              id="scheduleTimeInput"
-              #scheduleTimeInput
-              [(ngModel)]="myValue"
-              (ngModelChange)="onTimeInput($event)"
+              id="scheduleDayTimeInput"
+              #scheduleDayTimeInput
+              [format]="24"
+              [(ngModel)]="dayTimesPickerOutput"
+              (ngModelChange)="onDayTimeInput($event)"
             />
-            <ngx-mat-timepicker #picker></ngx-mat-timepicker>
+            <ngx-mat-timepicker #dayTimesPicker></ngx-mat-timepicker>
           </div>
         </ng-container>
       </div>

@@ -24,6 +24,7 @@ import { NgxMatTimepickerModule } from 'ngx-mat-timepicker';
 import { MatChipsModule } from '@angular/material/chips';
 import { ConfirmationDialogComponent } from './common/confirmation-dialog/confirmation-dialog.component';
 import { MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 @NgModule({
   declarations: [
@@ -54,6 +55,7 @@ import { MatDialogModule } from '@angular/material/dialog';
     NgxMatTimepickerModule,
     MatChipsModule,
     MatDialogModule,
+    MatSnackBarModule,
   ],
   providers: [...environment.providers],
   bootstrap: [AppComponent],
