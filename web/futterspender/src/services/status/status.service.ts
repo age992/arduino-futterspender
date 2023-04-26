@@ -12,8 +12,12 @@ export class StatusService implements IStatusService {
   public Connected = new BehaviorSubject(true);
   public Loading = new BehaviorSubject(false);
   public SetupMode = new BehaviorSubject(false);
-
+  public espMessage = new BehaviorSubject('');
   constructor() {}
+
+  setFetchInterval(seconds: number): void {
+    throw new Error('Method not implemented.');
+  }
 
   fetchMachineStatus(): void {
     throw new Error('Method not implemented.');

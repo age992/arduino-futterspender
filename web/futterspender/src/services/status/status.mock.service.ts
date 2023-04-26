@@ -20,9 +20,25 @@ export class StatusMockService implements IStatusService {
   private changeStatusDelay = 20000;
   private updateInterval = 10000;
 
+  public espMessage = new BehaviorSubject('');
+
   constructor() {
     this.fetchMachineStatus();
     setInterval(this.fetchMachineStatus, this.updateInterval);
+
+    const espIP = '192.168.137.180';
+    setInterval(() => {
+      fetch('http://' + espIP + '/api/')
+        .then((r) => {
+          console.log(r);
+          return r.text();
+        })
+        .then((s) => this.espMessage.next(s));
+    }, 3000);
+  }
+
+  setFetchInterval(seconds: number): void {
+    throw new Error('Method not implemented.');
   }
 
   private notify = () => {

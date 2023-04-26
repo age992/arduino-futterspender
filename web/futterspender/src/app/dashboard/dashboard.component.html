@@ -1,4 +1,5 @@
 <div id="foodPlanDisplay" class="section vertical">
+  <h1>{{ statusService.espMessage | async }}</h1>
   <ng-template [ngIf]="currentSchedule" [ngIfElse]="noScheduleData">
     <h3 id="foodPlanTitle">
       <span

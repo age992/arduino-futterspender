@@ -6,12 +6,19 @@
 #include <SD.h>
 #include <NTPClient.h>
 #include <WiFiUdp.h>
+#include <ArduinoJson.h>
+
+struct Config {
+  char ssid[64];
+  char password[64];
+};
 
 const char* ssid = "antons_hotspot";
 const char* password = "KeckPeter123#";
+const char* configPath = "/config.json";
+Config config;        
 const String frontendRootPath = "/frontend/";
 
-// Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
 
 WiFiUDP ntpUDP;
@@ -28,15 +35,37 @@ void handleApiTime(AsyncWebServerRequest *request){
 void setup(){
   // Serial port for debugging purposes
   Serial.begin(115200);
+
+  //init SD card
+  while (!SD.begin()) {
+    Serial.println("Couldn't initialize SD Card. Retry in 5 seconds...");
+    delay(5000);
+  }
+    
+  Serial.println("SD card initialized.");
+  Serial.println("Loading config.");
   
-  // Connect to Wi-Fi
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi..");
+  //Load config
+  while(!loadConfiguration(configPath, config)){
+    Serial.println("Couldn't read config file. Retry in 5 seconds...");
+    delay(5000);
   }
 
-  // Print ESP Local IP Address
+  Serial.println("Config loaded.");
+  Serial.print("SSID: ");
+  Serial.println(config.ssid);
+  Serial.print("Password: ");
+  Serial.println(config.password);
+
+  // Connect to Wi-Fi
+  Serial.println("Connecting to WiFi...");
+  WiFi.begin(config.ssid, config.password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println(".");
+  }
+
+  Serial.println("Connected!");
   Serial.println(WiFi.localIP());
 
   server.on("/api/time", [](AsyncWebServerRequest *request){
@@ -48,20 +77,37 @@ void setup(){
 
   server.serveStatic("/", SD, frontendRootPath.c_str()).setDefaultFile("index.html");
 
-  // Start server
   server.begin();
   Serial.println("Web Server started");
 
   timeClient.begin();
   timeClient.update();
-
-  if (SD.begin()) {
-    Serial.println("SD card initialization successfull");
-  }else{
-    Serial.println("SD card initialization failed!");
-  }
 }
 
 void loop() {
 
+}
+
+bool loadConfiguration(const char *filename, Config &config) {
+  if(!SD.exists(filename)){
+     Serial.println(F("Config file not found"));
+     return false;
+  }
+
+  File file = SD.open(filename);
+
+  StaticJsonDocument<512> doc;
+
+  DeserializationError error = deserializeJson(doc, file);
+  if (error){
+    Serial.println(F("Failed to deserialize config file"));
+    return false;
+  };
+
+  strlcpy(config.ssid, doc["ssid"], sizeof(config.ssid));
+  strlcpy(config.password, doc["password"], sizeof(config.password));
+
+  file.close();
+
+  return config.ssid != "" && config.password != "";
 }

@@ -30,7 +30,7 @@ export class DashboardComponent implements OnInit {
   public UpdatingActivity: boolean = false;
 
   constructor(
-    private statusService: StatusService,
+    public statusService: StatusService,
     private scheduleService: ScheduleService,
     private settingsService: SettingsService
   ) {}
