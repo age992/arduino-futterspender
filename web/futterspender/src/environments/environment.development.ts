@@ -8,8 +8,8 @@ import { StatusService } from 'src/services/status/status.service';
 export const environment = {
   production: false,
   providers: [
-    { provide: StatusService, useClass: StatusMockService },
     { provide: ScheduleService, useClass: ScheduleMockService },
     { provide: SettingsService, useClass: SettingsMockService },
   ],
+  apiUrl: 'http://futterspender.local/api',
 };

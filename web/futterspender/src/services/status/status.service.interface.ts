@@ -1,4 +1,5 @@
 import { Subject } from 'rxjs';
+import { FetchInterval } from 'src/models/FetchInterval';
 import { MachineStatus } from 'src/models/MachineStatus';
 
 export interface IStatusService {
@@ -6,9 +7,8 @@ export interface IStatusService {
   Connected: Subject<boolean>;
   Loading: Subject<boolean>;
   SetupMode: Subject<boolean>;
-  espMessage: Subject<string>;
   fetchMachineStatus(): void;
-  setFetchInterval(seconds: number): void;
+  setFetching(interval: FetchInterval): void;
   startFeed(): void;
   stopFeed(): void;
 }

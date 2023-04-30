@@ -1,6 +1,6 @@
 export interface MachineStatus {
-  ContainerLoad: Number;
-  PlateLoad: Number;
+  ContainerLoad: number;
+  PlateLoad: number;
   SDCardConnection: boolean;
   MotorOperation: boolean;
   WiFiConnection: boolean;

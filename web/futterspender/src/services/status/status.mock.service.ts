@@ -2,13 +2,13 @@ import { Injectable } from '@angular/core';
 import { IStatusService } from './status.service.interface';
 import { MachineStatus } from 'src/models/MachineStatus';
 import { BehaviorSubject, ReplaySubject, Subject } from 'rxjs';
+import { FetchInterval } from 'src/models/FetchInterval';
 
 @Injectable({
   providedIn: 'root',
 })
 export class StatusMockService implements IStatusService {
-  public MachineStatus: ReplaySubject<MachineStatus | null> =
-    new ReplaySubject();
+  public MachineStatus = new BehaviorSubject<MachineStatus | null>(null);
 
   private machineStatusInternal: MachineStatus | null = null;
 
@@ -20,24 +20,12 @@ export class StatusMockService implements IStatusService {
   private changeStatusDelay = 20000;
   private updateInterval = 10000;
 
-  public espMessage = new BehaviorSubject('');
-
   constructor() {
     this.fetchMachineStatus();
     setInterval(this.fetchMachineStatus, this.updateInterval);
-
-    const espIP = '192.168.137.180';
-    setInterval(() => {
-      fetch('http://' + espIP + '/api/')
-        .then((r) => {
-          console.log(r);
-          return r.text();
-        })
-        .then((s) => this.espMessage.next(s));
-    }, 3000);
   }
 
-  setFetchInterval(seconds: number): void {
+  setFetching(interval: FetchInterval): void {
     throw new Error('Method not implemented.');
   }
 

@@ -26,6 +26,7 @@ import { ConfirmationDialogComponent } from './common/confirmation-dialog/confir
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { HttpClientModule } from '@angular/common/http';
 
 @NgModule({
   declarations: [
@@ -58,6 +59,7 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
     MatDialogModule,
     MatSnackBarModule,
     MatButtonToggleModule,
+    HttpClientModule,
   ],
   providers: [...environment.providers],
   bootstrap: [AppComponent],
