@@ -27,7 +27,7 @@ export class StatusService implements IStatusService {
   };
   private readonly fetchIntervalFast: FetchInterval = {
     Active: false,
-    IntervalSeconds: 0.3,
+    IntervalSeconds: 1,
   };
   private readonly fetchFastChangeThreshold = 1; //change in gram per second
   private readonly fetchSlowGracePeriod = 6; //if no changes occur for this period of time, fetching will slow down
@@ -98,7 +98,7 @@ export class StatusService implements IStatusService {
 
   fetchMachineStatus = () => {
     this.Loading.next(true);
-
+    console.log('Fetch machine status...');
     this.http
       .get<MachineStatus>(environment.apiUrl + '/status')
       .pipe(catchError((err) => this.handleError(err)))

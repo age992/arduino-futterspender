@@ -12,10 +12,33 @@
 #include <sqlite3.h>
 #include <ESPmDNS.h>
 #include <Servo.h>
+#include <HX711.h>
 
 struct Config {
   char ssid[64];
   char password[64];
+};
+
+struct Notification{
+  bool Active;
+  bool Email;
+  bool Phone;
+};
+
+struct NotificationList{
+  Notification ContainerEmpty;
+  Notification DidNotEatInADay;
+};
+
+struct Settings {
+  String PetName;
+  double PlateTAR;
+  double PlateFilling;
+  NotificationList Notifications;
+  String Email;
+  String Phone;
+  int Language;
+  int Theme;
 };
 
 const char* configPath = "/config.json";
@@ -25,6 +48,7 @@ const String frontendRootPath = "/frontend/";
 const String dataRootPath = "/data/";
 
 double test_weight = 315;
+Settings settings;
 
 AsyncWebServer server(80);
 
@@ -34,7 +58,16 @@ NTPClient timeClient(ntpUDP);
 const int servoPin = 22;
 Servo servo;
 
-//const int weightPin =
+// HX711 circuit wiring
+const int LOADCELL_DOUT_PIN = 13;
+const int LOADCELL_SCK_PIN = 12;
+const int LOADCELL_TIMES = 10;
+HX711 scale_A;
+
+double getScaleValue(){
+  long val = scale_A.get_units(LOADCELL_TIMES) / 100;
+  return (double) val / 10;
+}
 
 void handleApiTime(AsyncWebServerRequest *request){
   timeClient.update();
@@ -68,8 +101,10 @@ void handleApiStatus(AsyncWebServerRequest *request){
   String response;
   DynamicJsonDocument doc(1024);
 
-  doc["ContainerLoad"] = test_weight;
-  doc["PlateLoad"] = test_weight / 10;
+  double currentWeight = getScaleValue();
+
+  doc["ContainerLoad"] = currentWeight;
+  doc["PlateLoad"] = currentWeight / 10;
   doc["SDCardConnection"] = true;
   doc["MotorOperation"] = true;
   doc["WiFiConnection"] = true;
@@ -79,10 +114,35 @@ void handleApiStatus(AsyncWebServerRequest *request){
   request->send(200, "application/json", response);
 }
 
+void handleApiSettings(AsyncWebServerRequest *request){
+  Serial.println("Handle scale request");
+
+  if(!request->hasParam("action")){
+    request->send(400);
+  }
+
+  String action = request->getParam("action")->value();
+  double currentWeight = getScaleValue();
+  
+  if(action == "tare"){
+    settings.PlateTAR = currentWeight;
+    Serial.print("PlateTAR was set to: ");
+    Serial.println(currentWeight);
+    request->send(200, "text/plain", std::to_string(currentWeight).c_str());
+  }else if(action == "fill"){
+    settings.PlateTAR = currentWeight;
+    Serial.print("PlateLoad was set to: ");
+    Serial.println(currentWeight);
+    request->send(200, "text/plain", std::to_string(currentWeight).c_str());
+  }
+
+  request->send(400);
+}
+
 void setup(){
   // Serial port for debugging purposes
   Serial.begin(115200);
-
+  
   //init SD card
   while (!SD.begin()) {
     Serial.println("Couldn't initialize SD Card. Retry in 5 seconds...");
@@ -134,6 +194,9 @@ void setup(){
   server.on("/api/status", [](AsyncWebServerRequest *request){
     handleApiStatus(request);
   });
+  server.on("/api/settings", [](AsyncWebServerRequest *request){
+    handleApiSettings(request);
+  });
   server.on("/api", [](AsyncWebServerRequest *request){
     request->send(200, "text/html", "Api base route");
   });
@@ -178,17 +241,21 @@ void setup(){
   }
 
   sqlite3_close(db1);*/
+
+  //HX711 Setup
+  Serial.println("Setting up scale...");
+  scale_A.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+
+  while(!scale_A.is_ready()){
+    Serial.println(".");
+    delay(2000);
+  }
+
+  scale_A.tare(LOADCELL_TIMES);  
+  Serial.println("Scale ready.");
 }
 
 void loop() {
-  if(Serial.available()){
-    String input = Serial.readString();
-
-    test_weight = std::stod(input.c_str());
-
-    Serial.print("Test weight is ");
-    Serial.println(test_weight);
-  }
 }
 
 const char* data = "Callback function called";
