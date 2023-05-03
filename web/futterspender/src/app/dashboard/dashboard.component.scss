@@ -24,6 +24,25 @@
 #status {
   height: 25%;
 
+  .svgContainer {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    bottom: 15px;
+
+    .svgSlider {
+      overflow: hidden;
+      position: absolute;
+      width: 100%;
+      bottom: 0;
+    }
+
+    img {
+      position: absolute;
+      bottom: -15px;
+    }
+  }
+
   div {
     box-shadow: none;
   }

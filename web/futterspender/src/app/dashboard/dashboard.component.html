@@ -97,12 +97,24 @@
 
 <div id="status" class="section">
   <div class="section vertical">
+    <div class="svgContainer">
+      <img src="assets/futtertank_schale.svg" width="100" height="100" />
+      <div class="svgSlider" [style.height.%]="containerLoadPercentage">
+        <img src="assets/futtertank_fuellung.svg" width="100" height="100" />
+      </div>
+    </div>
     <label>Behälter:</label>
     <ng-template [ngIf]="MachineStatus" [ngIfElse]="noLoadData">
       <label>{{ MachineStatus.ContainerLoad }}g</label>
     </ng-template>
   </div>
   <div class="section vertical">
+    <div class="svgContainer">
+      <img src="assets/futternapf_schale.svg" width="100" height="100" />
+      <div class="svgSlider" [style.height.%]="plateLoadPercentage">
+        <img src="assets/futternapf_fuellung.svg" width="100" height="100" />
+      </div>
+    </div>
     <label>Fressnapf:</label>
     <ng-template [ngIf]="MachineStatus" [ngIfElse]="noLoadData">
       <label>{{ MachineStatus.PlateLoad }}g</label>

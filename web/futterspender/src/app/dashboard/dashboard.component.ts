@@ -95,4 +95,19 @@ export class DashboardComponent implements OnInit {
       this.UpdatingActivity = false;
     });
   };
+
+  protected get containerLoadPercentage() {
+    if (!this.MachineStatus) {
+      return 0;
+    }
+    return (this.MachineStatus.ContainerLoad / 1000) * 100;
+  }
+
+  protected get plateLoadPercentage() {
+    if (!this.MachineStatus) {
+      return 0;
+    }
+    return (this.MachineStatus.PlateLoad / 100) * 100;
+    // return this.MachineStatus!.PlateLoad / this.settings!.PlateFilling as number;
+  }
 }

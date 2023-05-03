@@ -70,23 +70,23 @@ const int LOADCELL_B_DOUT_PIN = 33;
 HX711 scale_B;
 
 double getScaleValue(HX711 scale){
-  long val = scale.get_units(LOADCELL_TIMES) / 100;
+  long val = scale.get_units(LOADCELL_TIMES) * 10;
   double scaleValue =  (double) val / 10;
-  Serial.println(scaleValue);
+  //Serial.println(scaleValue);
   return scaleValue;
 }
 
-void handleApiTime(AsyncWebServerRequest *request){
+void handleApiTime(){
   timeClient.update();
 
   String formattedDate = timeClient.getFormattedTime();
   String response = "Api Time: " + formattedDate;
-  request->send(200, "text/html", response);
+  server.send(200, "text/html", response);
 }
 
-void handleApiContainer(AsyncWebServerRequest *request){
+void handleApiContainer(){
   Serial.println("Handle container request");
-  request->send(200);
+  server.send(200);
   /*
   if(request->hasParam("open")){
     AsyncWebParameter* p = request->getParam("open");
@@ -95,14 +95,14 @@ void handleApiContainer(AsyncWebServerRequest *request){
     }else{
       servo.write(0);
     }
-    request->send(200);
+    server.send(200);
   }else{
     servo.write(0);
-    request->send(400);
+    server.send(400);
   }*/
 }
 
-void handleApiStatus(AsyncWebServerRequest *request){
+void handleApiStatus(){
  // Serial.println("Handle status request");
 
   String response;
@@ -119,15 +119,12 @@ void handleApiStatus(AsyncWebServerRequest *request){
 
   serializeJson(doc, response);
 
-  request->send(200, "application/json", response);
+  server.send(200, "application/json", response);
 }
 
-void handleApiSettings(AsyncWebServerRequest *request){
+void handleApiSettings(){
   Serial.println("Handle scale request");
-  request->send(200);
-  if(!request->hasParam("action")){
-    request->send(400);
-  }
+  server.send(200);
 }
 
 void setup(){
@@ -148,7 +145,7 @@ void setup(){
   Serial.println("\nPut 152 gram on scale A, press a key to continue");
   while(!Serial.available());
   while(Serial.available()) Serial.read();
-  scale_A.calibrate_scale(152, 5); 
+  scale_A.calibrate_scale(152, 5);
   Serial.println("Scale A ready.");
   
   Serial.println("Setting up scale B...");
@@ -208,36 +205,36 @@ void setup(){
   //Serial.println("Start servo");
   //servo.attach(servoPin);
 
-  server.on("/api/time", [](AsyncWebServerRequest *request){
-    handleApiTime(request);
+  server.on("/api/time", [](){
+    handleApiTime();
   });
-  server.on("/api/container", [](AsyncWebServerRequest *request){
-    handleApiContainer(request);
+  server.on("/api/container", [](){
+    handleApiContainer();
   });
-  server.on("/api/status", [](AsyncWebServerRequest *request){
-    handleApiStatus(request);
+  server.on("/api/status", [](){
+    handleApiStatus();
   });
-  server.on("/api/settings", [](AsyncWebServerRequest *request){
-    handleApiSettings(request);
+  server.on("/api/settings", [](){
+    handleApiSettings();
   });
-  server.on("/api", [](AsyncWebServerRequest *request){
-    request->send(200, "text/html", "Api base route");
+  server.on("/api", [](){
+    server.send(200, "text/html", "Api base route");
   });
 
-  server.serveStatic("/", SD, frontendRootPath.c_str()).setDefaultFile("index.html");
+  server.serveStatic("/", SD, frontendRootPath.c_str());//.setDefaultFile("index.html");
 
-  server.onNotFound([](AsyncWebServerRequest *request){
-    if (request->method() == HTTP_OPTIONS) {
-      request->send(200);
+  server.onNotFound([](){
+    if (server.method() == HTTP_OPTIONS) {
+      server.send(200);
     } else {
-      request->send(404, "application/json", "{\"message\":\"Not found\"}");
+      server.send(404, "application/json", "{\"message\":\"Not found\"}");
     }
   });
   
-  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
+  /*DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
-  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type");
-
+  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type");*/
+  server.enableCORS(true);
   server.begin();
   Serial.println("Web Server started");
 
@@ -264,7 +261,6 @@ void setup(){
   }
 
   sqlite3_close(db1);*/
-  
 }
 
 void loop() {

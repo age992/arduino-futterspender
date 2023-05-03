@@ -19,11 +19,7 @@ export class AppComponent implements OnInit {
   public Loading: boolean = false;
   public Connected: boolean = true;
 
-  constructor(
-    public statusService: StatusService,
-    private scheduleService: ScheduleService,
-    private settingsService: SettingsService
-  ) {}
+  constructor(private statusService: StatusService) {}
 
   ngOnInit(): void {
     this.statusService.MachineStatus.subscribe((m) => {
