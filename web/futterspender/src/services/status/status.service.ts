@@ -10,10 +10,7 @@ import { FetchInterval } from 'src/models/FetchInterval';
   providedIn: 'root',
 })
 export class StatusService implements IStatusService {
-  /*
   public MachineStatus = new BehaviorSubject<MachineStatus | null>(null);
-
-  private apiBase = 'http://esp32.local/api';
 
   private machineStatusInternal: MachineStatus | null = null;
 
@@ -99,7 +96,7 @@ export class StatusService implements IStatusService {
 
   fetchMachineStatus = () => {
     this.Loading.next(true);
-    console.log('Fetch machine status...');
+    const start = new Date().getMilliseconds();
     this.http
       .get<MachineStatus>(environment.apiUrl + '/status')
       .pipe(catchError((err) => this.handleError(err)))
@@ -114,12 +111,12 @@ export class StatusService implements IStatusService {
 
   startFeed = () => {
     console.log('Start feeding...');
-    this.http.get(this.apiBase + '/container?open=true');
+    this.http.get(environment.apiUrl + '/food/open').subscribe();
   };
 
   stopFeed = () => {
     console.log('...feeding stopped.');
-    this.http.get(this.apiBase + '/container?open=false');
+    this.http.get(environment.apiUrl + '/food/close').subscribe();
   };
 
   private handleError(error: HttpErrorResponse) {
@@ -138,10 +135,9 @@ export class StatusService implements IStatusService {
       () => new Error('Something bad happened; please try again later.')
     );
   }
-  */
 
   //--------------------------------------
-
+  /*
   public MachineStatus = new BehaviorSubject<MachineStatus | null>(null);
 
   private machineStatusInternal: MachineStatus | null = null;
@@ -196,5 +192,5 @@ export class StatusService implements IStatusService {
 
   stopFeed = () => {
     console.log('...feeding stopped.');
-  };
+  };*/
 }
