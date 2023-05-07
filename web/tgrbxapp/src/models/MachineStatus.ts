@@ -3,5 +3,4 @@ export interface MachineStatus {
   PlateLoad: number;
   SDCardConnection: boolean;
   MotorOperation: boolean;
-  WiFiConnection: boolean;
 }
