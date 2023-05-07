@@ -1,4 +1,4 @@
-import { EScheduleMode } from 'src/app/lib/EScheduleMode';
+import { EScheduleMode } from 'src/lib/EScheduleMode';
 import { Schedule } from 'src/models/Schedule';
 
 const d1 = new Date('1970-01-01T06:00:00.000Z').getTime();
@@ -11,7 +11,7 @@ export const schedules: Schedule[] = [
     Name: 'Fritzchen Ferien',
     Active: false,
     Selected: false,
-    Mode: EScheduleMode.Max,
+    Mode: EScheduleMode.MaxTimes,
     OnlyWhenEmpty: true,
     MaxTimes: 3,
     MaxTimesStartTime: d1,

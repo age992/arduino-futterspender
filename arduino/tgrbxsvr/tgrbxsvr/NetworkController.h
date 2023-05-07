@@ -11,6 +11,7 @@ public:
   long getCurrentTime();
 
   bool initWebserver();
+  void broadcast(char* serializedMessage);
 };
 
 #endif

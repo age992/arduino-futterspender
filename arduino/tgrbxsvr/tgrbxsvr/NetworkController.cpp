@@ -15,6 +15,15 @@ WiFiUDP ntpUdp;
 NTPClient ntpClient(ntpUdp);
 
 AsyncWebServer server(80);
+AsyncWebSocket ws("/ws");
+
+void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
+  if (type == WS_EVT_CONNECT) {
+    Serial.println("Websocket client connection received");
+  } else if (type == WS_EVT_DISCONNECT) {
+    Serial.println("Client disconnected");
+  }
+}
 
 bool NetworkController::initNetworkConnection(Config config) {
   Serial.println("Connecting to WiFi...");
@@ -27,12 +36,12 @@ bool NetworkController::initNetworkConnection(Config config) {
   Serial.println("Connected!");
   Serial.println(WiFi.localIP());
 
-  Serial.println("Start mDNS...");
-  const char* domainName = config.localDomainName != nullptr ? config.localDomainName : "futterspender";
+  Serial.println("Start MDNS...");
+  const char *domainName = config.localDomainName != nullptr ? config.localDomainName : "futterspender";
   if (MDNS.begin(domainName)) {
     Serial.println("MDNS started!");
   } else {
-    Serial.println("Couldn't start mdns");
+    Serial.println("Couldn't start MDNS");
   }
   return true;
 }
@@ -47,38 +56,42 @@ long NetworkController::getCurrentTime() {
   return ntpClient.getEpochTime();
 }
 
-bool NetworkController::initWebserver(){
-  server.on("/api/time", [](AsyncWebServerRequest *request){
-    //handleApiTime(request);
-  });
-  server.on("/api/container", [](AsyncWebServerRequest *request){
+bool NetworkController::initWebserver() {
+  server.on("/api/container", [](AsyncWebServerRequest *request) {
     //handleApiContainer(request);
   });
-  server.on("/api/status", [](AsyncWebServerRequest *request){
-    //handleApiStatus(request);
-  });
-  server.on("/api/settings", [](AsyncWebServerRequest *request){
+  server.on("/api/settings", [](AsyncWebServerRequest *request) {
     //handleApiSettings(request);
   });
-  server.on("/api", [](AsyncWebServerRequest *request){
+  server.on("/api/schedule", [](AsyncWebServerRequest *request) {
+    //handleApiSettings(request);
+  });
+  server.on("/api", [](AsyncWebServerRequest *request) {
     request->send(200, "text/html", "Api base route");
   });
 
   server.serveStatic("/", SD, frontendRootPath.c_str()).setDefaultFile("index.html");
 
-  server.onNotFound([](AsyncWebServerRequest *request){
+  server.onNotFound([](AsyncWebServerRequest *request) {
     if (request->method() == HTTP_OPTIONS) {
       request->send(200);
     } else {
       request->send(404, "application/json", "{\"message\":\"Not found\"}");
     }
   });
-  
+
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type");
 
+  ws.onEvent(onWsEvent);
+  server.addHandler(&ws);
+
   server.begin();
   Serial.println("Web Server started");
   return true;
+}
+
+void NetworkController::broadcast(char *serializedMessage) {
+  ws.textAll(serializedMessage);
 }

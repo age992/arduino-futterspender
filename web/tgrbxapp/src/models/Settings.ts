@@ -1,5 +1,5 @@
-import { ELanguage } from 'src/app/lib/ELanguage';
-import { ETheme } from 'src/app/lib/ETheme';
+import { ELanguage } from 'src/lib/ELanguage';
+import { ETheme } from 'src/lib/ETheme';
 import { Notification } from './Notification';
 
 export interface Settings {

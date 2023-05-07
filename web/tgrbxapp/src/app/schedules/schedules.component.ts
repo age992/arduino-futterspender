@@ -2,9 +2,9 @@ import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import { Location } from '@angular/common';
 import { Schedule } from 'src/models/Schedule';
 import { ScheduleService } from 'src/services/schedule/schedule.service';
-import { EScheduleMode } from '../lib/EScheduleMode';
+import { EScheduleMode } from '../../lib/EScheduleMode';
 import { FormControl } from '@angular/forms';
-import { getTimestamp, timePickerToUnix } from '../lib/DateConverter';
+import { getTimestamp, timePickerToUnix } from '../../lib/DateConverter';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../common/confirmation-dialog/confirmation-dialog.component';
 import { MatSnackBar, MatSnackBarRef } from '@angular/material/snack-bar';
@@ -200,7 +200,7 @@ export class SchedulesComponent implements OnInit {
     let valid = false;
     console.log(schedule);
     switch (true) {
-      case schedule.Mode == EScheduleMode.Max:
+      case schedule.Mode == EScheduleMode.MaxTimes:
         valid =
           !!schedule.Name &&
           !!schedule.MaxTimes &&

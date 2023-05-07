@@ -3,8 +3,8 @@ import { MachineStatus } from 'src/models/MachineStatus';
 import { Schedule } from 'src/models/Schedule';
 import { ScheduleService } from 'src/services/schedule/schedule.service';
 import { StatusService } from 'src/services/status/status.service';
-import { EScheduleMode } from 'src/app/lib/EScheduleMode';
-import { getTimestamp } from 'src/app/lib/DateConverter';
+import { EScheduleMode } from 'src/lib/EScheduleMode';
+import { getTimestamp } from 'src/lib/DateConverter';
 import { SettingsService } from 'src/services/settings/settings.service';
 import { Settings } from 'src/models/Settings';
 

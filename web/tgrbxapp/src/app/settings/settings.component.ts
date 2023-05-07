@@ -3,8 +3,8 @@ import { Location } from '@angular/common';
 import { SettingsService } from 'src/services/settings/settings.service';
 import { Settings } from 'src/models/Settings';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ELanguage } from '../lib/ELanguage';
-import { ETheme } from '../lib/ETheme';
+import { ELanguage } from '../../lib/ELanguage';
+import { ETheme } from '../../lib/ETheme';
 
 @Component({
   selector: 'settings',

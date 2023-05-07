@@ -1,4 +1,4 @@
-import { EScheduleMode } from 'src/app/lib/EScheduleMode';
+import { EScheduleMode } from 'src/lib/EScheduleMode';
 
 export interface Schedule {
   ID?: number;

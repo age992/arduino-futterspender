@@ -3,6 +3,8 @@
 #include <HX711.h>
 
 const int servoPin = 32;
+const int SERVO_CLOSE_ANGLE = 0;
+const int SERVO_OPEN_ANGLE = 90;
 Servo servo;
 
 const int LOADCELL_TIMES = 1;
@@ -17,11 +19,18 @@ const int LOADCELL_B_SCK_PIN = 25;
 const int LOADCELL_B_DOUT_PIN = 33;
 HX711 scale_B;
 
-bool MachineController::initControls(){
+double getScaleValue(HX711 scale) {
+  long val = scale.get_units(LOADCELL_TIMES) / 100;
+  double scaleValue = (double)val / 10;
+  Serial.println(scaleValue);
+  return scaleValue;
+}
+
+bool MachineController::initControls() {
   Serial.println("Setting up scale A...");
   scale_A.begin(LOADCELL_A_DOUT_PIN, LOADCELL_A_SCK_PIN);
 
-  while(!scale_A.is_ready()){
+  while (!scale_A.is_ready()) {
     Serial.println(".");
     delay(2000);
   }
@@ -31,7 +40,7 @@ bool MachineController::initControls(){
   Serial.println("Setting up scale B...");
   scale_B.begin(LOADCELL_B_DOUT_PIN, LOADCELL_B_SCK_PIN);
 
-  while(!scale_B.is_ready()){
+  while (!scale_B.is_ready()) {
     Serial.println(".");
     delay(2000);
   }
@@ -40,13 +49,33 @@ bool MachineController::initControls(){
 
   Serial.println("Start servo");
   servo.attach(servoPin);
+  servo.write(SERVO_CLOSE_ANGLE);
 
   return true;
 }
 
-double getScaleValue(HX711 scale){
-  long val = scale.get_units(LOADCELL_TIMES) / 100;
-  double scaleValue =  (double) val / 10;
-  Serial.println(scaleValue);
-  return scaleValue;
-}
+void MachineController::calibrateContainerScale(double scaleFactor, int offset){
+  scale_A.set_scale(scaleFactor);
+  scale_A.set_offset(offset);
+};
+
+void MachineController::calibratePlateScale(double scaleFactor, int offset){
+  scale_B.set_scale(scaleFactor);
+  scale_B.set_offset(offset);
+};
+
+double MachineController::getContainerLoad(){
+  return getScaleValue(scale_A);
+};
+
+double MachineController::getPlateLoad(){
+  return getScaleValue(scale_B);
+};
+
+void MachineController::openContainer(){
+  servo.write(SERVO_OPEN_ANGLE);
+};
+
+void MachineController::closeContainer(){
+  servo.write(SERVO_CLOSE_ANGLE);
+};
