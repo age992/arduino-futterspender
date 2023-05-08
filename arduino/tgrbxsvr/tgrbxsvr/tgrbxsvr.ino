@@ -5,6 +5,7 @@
 #include <vector>
 #include <algorithm>
 #include <ArduinoJson.h>
+#include "JsonHelper.h"
 #include "DataAccess.h"
 #include "MachineController.h"
 #include "NetworkController.h"
@@ -24,8 +25,8 @@ double CURRENT_LOOP_FREQ = LOOP_FREQ_NORMAL;
 long noStatusChangeTimestamp = 0;
 
 DataAccess dataAccess;
-MachineController machineController;
-NetworkController networkController;
+MachineController machineController(dataAccess);
+NetworkController networkController(dataAccess);
 
 SystemSettings* systemSettings = nullptr;
 Config* config = nullptr;
@@ -222,31 +223,39 @@ void handleCurrentData(SignificantWeightChange significantChange) {
   String scaleDataMessage = "";
 
   ArduinoJson::DynamicJsonDocument doc(1024);
-  ArduinoJson::JsonObject status = doc.createNestedObject("status");
-  ArduinoJson::JsonArray history = doc.createNestedArray("history");
+  doc["status"] = serializeStatus(*currentStatus);
+  ArduinoJson::JsonObject history = doc.createNestedObject("history");
+  ArduinoJson::JsonArray schedules = history.createNestedArray("schedules");
+  ArduinoJson::JsonArray events = history.createNestedArray("events");
+  ArduinoJson::JsonArray scaleData = history.createNestedArray("scaleData");
 
   switch (significantChange) {
     case OnlyContainer:
       {
         ScaleData data = createScaleDataHistory(0, currentStatus->ContainerLoad);
         containerScaleHistoryBuffer.push_back(data);
-        history.add("serialize(history_data_container)");
+        String serializedData = serializeScaleData(data);
+        scaleData.add(serializedData);
         break;
       }
     case OnlyPlate:
       {
         ScaleData data = createScaleDataHistory(1, currentStatus->PlateLoad);
         plateScaleHistoryBuffer.push_back(data);
-        history.add("serialize(history_data_plate)");
+        String serializedData = serializeScaleData(data);
+        scaleData.add(serializedData);
         break;
       }
     case Both:
       {
         ScaleData data_A = createScaleDataHistory(0, currentStatus->ContainerLoad);
         containerScaleHistoryBuffer.push_back(data_A);
+        String serializedData_A = serializeScaleData(data_A);
+        scaleData.add(serializedData_A);
         ScaleData data_B = createScaleDataHistory(1, currentStatus->PlateLoad);
         plateScaleHistoryBuffer.push_back(data_B);
-        history.add("serialize(history_data_container, history_data_plate)");
+        String serializedData_B = serializeScaleData(data_B);
+        scaleData.add(serializedData_B);
         break;
       }
   }

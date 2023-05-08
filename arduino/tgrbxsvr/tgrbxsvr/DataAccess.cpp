@@ -4,6 +4,7 @@
 #include <ArduinoJson.h>
 #include <stdio.h>
 #include <sqlite3.h>
+#include <stdlib.h>
 
 bool initialized = false;
 int rc;
@@ -115,11 +116,43 @@ SystemSettings *DataAccess::getSystemSettings() {
 //--- DB: History ---
 
 int DataAccess::getNumFedFromTo(long from, long to) {
-  return 1;
+  int count = 0;
+
+  char *sql = "SELECT COUNT(*) FROM Event WHERE Type=? AND CreatedOn>=? AND CreatedOn<?";
+  sqlite3_stmt *stmt;
+
+  rc = sqlite3_prepare_v2(dbHistory, sql, -1, &stmt, NULL);
+  rc = sqlite3_bind_int(stmt, 1, Feed);
+  rc = sqlite3_bind_int64(stmt, 2, from);
+  rc = sqlite3_bind_int64(stmt, 3, to);
+  rc = sqlite3_step(stmt);
+
+  if (rc == SQLITE_ROW) {
+    count = sqlite3_column_int(stmt, 0);
+  }
+
+  sqlite3_finalize(stmt);
+  return count;
 }
 
 long DataAccess::getLastFedTimestampBefore(long before) {
-  return 1;
+  long lastFedTimestamp;
+
+  char *sql = "SELECT CreatedOn FROM Event LIMIT 1 WHERE Type=? AND CreatedOn<=?";
+  sqlite3_stmt *stmt;
+
+  rc = sqlite3_prepare_v2(dbHistory, sql, -1, &stmt, NULL);
+  rc = sqlite3_bind_int(stmt, 1, Feed);
+  rc = sqlite3_bind_int64(stmt, 2, before);
+  rc = sqlite3_step(stmt);
+
+  if (rc == SQLITE_ROW) {
+    String lastFedTimestampString = sqlite3_column_string(stmt, 0);
+    lastFedTimestamp = std::stol(lastFedTimestampString.c_str());
+  }
+
+  sqlite3_finalize(stmt);
+  return lastFedTimestamp;
 }
 
 //--- DB: User ---

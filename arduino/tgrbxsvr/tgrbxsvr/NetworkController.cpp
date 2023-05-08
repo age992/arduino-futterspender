@@ -37,6 +37,8 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
   }
 }
 
+NetworkController::NetworkController(DataAccess& _dataAccess) : dataAccess(_dataAccess){};
+
 bool NetworkController::initNetworkConnection(Config config) {
   Serial.println("Connecting to WiFi...");
   WiFi.begin(config.ssid, config.password);

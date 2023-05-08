@@ -26,6 +26,8 @@ double getScaleValue(HX711 scale) {
   return scaleValue;
 }
 
+MachineController::MachineController(DataAccess& _dataAccess) : dataAccess(_dataAccess){};
+
 bool MachineController::initControls() {
   Serial.println("Setting up scale A...");
   scale_A.begin(LOADCELL_A_DOUT_PIN, LOADCELL_A_SCK_PIN);
