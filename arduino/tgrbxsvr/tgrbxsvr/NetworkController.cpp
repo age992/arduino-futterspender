@@ -1,5 +1,7 @@
 #include "NetworkController.h"
 #include "freertos/FreeRTOS.h"
+#include <freertos/task.h>
+#include <freertos/projdefs.h>
 #include <AsyncTCP.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
@@ -16,6 +18,16 @@ NTPClient ntpClient(ntpUdp);
 
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
+
+const int CLEAN_CLIENTS_INTERVAL = 10;  //seconds
+TaskHandle_t clearClientsTaskHandle;
+
+void clearClientsTask(void *pvParameters) {
+  while (true) {
+    vTaskDelay(pdMS_TO_TICKS(CLEAN_CLIENTS_INTERVAL * 1000));
+    ws.cleanupClients();
+  }
+}
 
 void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
   if (type == WS_EVT_CONNECT) {
@@ -89,9 +101,14 @@ bool NetworkController::initWebserver() {
 
   server.begin();
   Serial.println("Web Server started");
+  xTaskCreate(clearClientsTask, "ClearClientsTask", 4096, NULL, 1, &clearClientsTaskHandle);
   return true;
 }
 
-void NetworkController::broadcast(char *serializedMessage) {
+bool NetworkController::hasWebClients() {
+  return ws.count() > 0;
+}
+
+void NetworkController::broadcast(const char *serializedMessage) {
   ws.textAll(serializedMessage);
 }

@@ -13,6 +13,18 @@ struct MachineStatus {
   bool WiFiConnection;
 };
 
+struct MotorCheckParams {
+  double ContainerLoad;
+  bool Open;
+};
+
+enum SignificantWeightChange {
+  None,
+  OnlyContainer,
+  OnlyPlate,
+  Both
+};
+
 struct Config {
   char ssid[64];
   char password[64];

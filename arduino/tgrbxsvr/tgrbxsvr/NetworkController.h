@@ -11,7 +11,8 @@ public:
   long getCurrentTime();
 
   bool initWebserver();
-  void broadcast(char* serializedMessage);
+  bool hasWebClients();
+  void broadcast(const char* serializedMessage);
 };
 
 #endif
