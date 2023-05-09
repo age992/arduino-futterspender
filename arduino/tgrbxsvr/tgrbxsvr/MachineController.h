@@ -4,11 +4,10 @@
 #include "Models.h"
 #include "DataAccess.h"
 
+extern DataAccess dataAccess;
+
 class MachineController {
-  private:
-    DataAccess& dataAccess;
   public:
-    MachineController(DataAccess& _dataAccess);
     bool initControls();
     void calibrateContainerScale(double scaleFactor, int offset );
     void calibratePlateScale(double scaleFactor, int offset );

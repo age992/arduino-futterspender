@@ -4,12 +4,12 @@
 #include "Models.h"
 #include "DataAccess.h"
 
-class NetworkController {
+extern DataAccess dataAccess;
+extern Schedule* selectedSchedule;
+extern UserSettings* userSetting;
 
-private:
-  DataAccess& dataAccess;
+class NetworkController {
 public:
-  NetworkController(DataAccess& _dataAccess);
   bool initNetworkConnection(Config config);
 
   bool initNTP();

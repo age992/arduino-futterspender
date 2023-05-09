@@ -2,11 +2,11 @@
 #include "freertos/FreeRTOS.h"
 #include <freertos/task.h>
 #include <freertos/projdefs.h>
-#include <AsyncTCP.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
-#include <NTPClient.h>
+#include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+#include <NTPClient.h>
 #include <ESPmDNS.h>
 #include <ArduinoJson.h>
 #include <SD.h>
@@ -37,7 +37,40 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
   }
 }
 
-NetworkController::NetworkController(DataAccess& _dataAccess) : dataAccess(_dataAccess){};
+//-- Rest API handlers --//
+
+void handleApiActivateSchedule(AsyncWebServerRequest *request) {
+  Serial.println("Handle activate schedule request");
+
+  if (!request->hasParam("id") || !request->hasParam("active")) {
+    request->send(400);
+  }
+
+  AsyncWebParameter *pId = request->getParam("id");
+  AsyncWebParameter *pActive = request->getParam("active");
+
+  try {
+    const int id = std::stoi(pId->value().c_str());
+    const bool active = (std::stoi(pActive->value().c_str()) != 0);
+
+    dataAccess.setActiveSchedule(id, true);
+
+    if (selectedSchedule != nullptr) {
+      if (selectedSchedule->ID != id) {
+        dataAccess.setSelectSchedule(selectedSchedule->ID, false);
+        selectedSchedule = dataAccess.getSelectedSchedule();
+      } else {
+        selectedSchedule->Active = active;
+      }
+    } else {
+      selectedSchedule = dataAccess.getSelectedSchedule();
+    }
+  } catch (...) {
+    request->send(400);
+  }
+}
+
+//---//
 
 bool NetworkController::initNetworkConnection(Config config) {
   Serial.println("Connecting to WiFi...");

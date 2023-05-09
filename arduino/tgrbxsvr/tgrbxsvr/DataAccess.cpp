@@ -199,6 +199,10 @@ UserSettings *DataAccess::getUserSettings() {
   return &settings;
 }
 
+bool DataAccess::updateUserSettings(UserSettings userSettings){
+  return false;
+}
+
 Schedule *DataAccess::getSelectedSchedule() {
   Schedule schedule;
 
@@ -240,4 +244,49 @@ Schedule *DataAccess::getSelectedSchedule() {
 
   sqlite3_finalize(stmt);
   return &schedule;
+}
+
+bool DataAccess::setSelectSchedule(int scheduleID, bool selected) {
+  sqlite3_stmt *stmt;
+  const char *sql = "UPDATE Schedules "
+                    "SET Selected=? "
+                    "WHERE ID=?;";
+
+  rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
+
+  rc = sqlite3_bind_int(stmt, 1, selected ? 1 : 0);
+  rc = sqlite3_bind_int(stmt, 2, scheduleID);
+
+  rc = sqlite3_step(stmt);
+  rc = sqlite3_finalize(stmt);
+  return rc == SQLITE_OK;
+}
+
+bool DataAccess::setActiveSchedule(int scheduleID, bool active) {
+  sqlite3_stmt *stmt;
+  const char *sql = "UPDATE Schedules "
+                    "SET Selected=1 "
+                    "SET Active=? "
+                    "WHERE ID=?;";
+
+  rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
+
+  rc = sqlite3_bind_int(stmt, 1, active ? 1 : 0);
+  rc = sqlite3_bind_int(stmt, 2, scheduleID);
+
+  rc = sqlite3_step(stmt);
+  rc = sqlite3_finalize(stmt);
+  return rc == SQLITE_OK;
+}
+
+int DataAccess::insertSchedule(Schedule schedule){
+  return 0;
+}
+
+bool DataAccess::updateSchedule(Schedule schedule){
+  return false;
+}
+
+bool DataAccess::deleteSchedule(Schedule schedule){
+  return false;
 }

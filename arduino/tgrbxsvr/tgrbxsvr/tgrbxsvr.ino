@@ -24,15 +24,14 @@ const double COOLDOWN_TIME = 5;  //seconds
 double CURRENT_LOOP_FREQ = LOOP_FREQ_NORMAL;
 long noStatusChangeTimestamp = 0;
 
-DataAccess dataAccess;
-MachineController machineController(dataAccess);
-NetworkController networkController(dataAccess);
-
-SystemSettings* systemSettings = nullptr;
-Config* config = nullptr;
-UserSettings* userSettings = nullptr;
-
 Schedule* selectedSchedule = nullptr;
+SystemSettings* systemSettings = nullptr;
+UserSettings* userSettings = nullptr;
+Config* config = nullptr;
+
+DataAccess dataAccess;
+MachineController machineController;
+NetworkController networkController;
 
 MachineStatus* previousStatus = nullptr;
 MachineStatus* currentStatus = nullptr;
@@ -220,7 +219,6 @@ void updateLoopFrequency(SignificantWeightChange significantChange) {
 
 void handleCurrentData(SignificantWeightChange significantChange) {
   const bool clientsAvailable = networkController.hasWebClients();
-  String scaleDataMessage = "";
 
   ArduinoJson::DynamicJsonDocument doc(1024);
   doc["status"] = serializeStatus(*currentStatus);
@@ -275,7 +273,7 @@ void handleCurrentData(SignificantWeightChange significantChange) {
   } else {
     if (containerScaleHistoryBuffer.size() >= MAX_HISTORY_BUFFER) {
     }
-    if (!plateScaleHistoryBuffer.size() >= MAX_HISTORY_BUFFER) {
+    if (plateScaleHistoryBuffer.size() >= MAX_HISTORY_BUFFER) {
     }
   }
 }

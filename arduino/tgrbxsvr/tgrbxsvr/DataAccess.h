@@ -22,7 +22,14 @@ public:
   //--- DB: User ---
 
   UserSettings *getUserSettings();
+  bool updateUserSettings(UserSettings userSettings);
+
   Schedule *getSelectedSchedule();
+  bool setSelectSchedule(int scheduleID, bool selected);
+  bool setActiveSchedule(int scheduleID, bool active);
+  int insertSchedule(Schedule schedule);
+  bool updateSchedule(Schedule schedule);
+  bool deleteSchedule(Schedule schedule);
   
 };
 
