@@ -39,7 +39,7 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
 
 //-- Rest API handlers --//
 
-void handleApiActivateSchedule(AsyncWebServerRequest *request) {
+void handleApiScheduleActivate(AsyncWebServerRequest *request) {
   Serial.println("Handle activate schedule request");
 
   if (!request->hasParam("id") || !request->hasParam("active")) {
@@ -51,7 +51,7 @@ void handleApiActivateSchedule(AsyncWebServerRequest *request) {
 
   try {
     const int id = std::stoi(pId->value().c_str());
-    const bool active = (std::stoi(pActive->value().c_str()) != 0);
+    const bool active = pActive->value().equals("true");
 
     dataAccess.setActiveSchedule(id, true);
 
@@ -68,6 +68,66 @@ void handleApiActivateSchedule(AsyncWebServerRequest *request) {
   } catch (...) {
     request->send(400);
   }
+}
+
+void handleApiSchedule(AsyncWebServerRequest *request) {
+  WebRequestMethodComposite method = request->method();
+
+  switch (method) {
+    case HTTP_GET:
+      {
+        break;
+      }
+    case HTTP_POST:
+      {
+        break;
+      }
+    case HTTP_PUT:
+      {
+        break;
+      }
+    case HTTP_DELETE:
+      {
+        break;
+      }
+  }
+
+  request->send(400);
+}
+
+void handleApiSettings(AsyncWebServerRequest *request) {
+  WebRequestMethodComposite method = request->method();
+
+  switch (method) {
+    case HTTP_GET:
+      {
+        break;
+      }
+    case HTTP_POST:
+      {
+        break;
+      }
+  }
+
+  request->send(400);
+}
+
+void handleApiContainer(AsyncWebServerRequest *request) {
+  if (!request->hasParam("open")) {
+    request->send(400);
+    return;
+  }
+
+  AsyncWebParameter *p = request->getParam("open");
+  bool open = p->value().equals("true");
+
+  if (open) {
+    //servo.write(90);
+  } else {
+    //servo.write(0);
+  }
+
+  request->send(200);
 }
 
 //---//
@@ -105,13 +165,16 @@ long NetworkController::getCurrentTime() {
 
 bool NetworkController::initWebserver() {
   server.on("/api/container", [](AsyncWebServerRequest *request) {
-    //handleApiContainer(request);
+    handleApiContainer(request);
   });
   server.on("/api/settings", [](AsyncWebServerRequest *request) {
-    //handleApiSettings(request);
+    handleApiSettings(request);
+  });
+  server.on("/api/schedule/activate", [](AsyncWebServerRequest *request) {
+    handleApiScheduleActivate(request);
   });
   server.on("/api/schedule", [](AsyncWebServerRequest *request) {
-    //handleApiSettings(request);
+    handleApiSchedule(request);
   });
   server.on("/api", [](AsyncWebServerRequest *request) {
     request->send(200, "text/html", "Api base route");
@@ -123,7 +186,7 @@ bool NetworkController::initWebserver() {
     if (request->method() == HTTP_OPTIONS) {
       request->send(200);
     } else {
-      request->send(404, "application/json", "{\"message\":\"Not found\"}");
+      request->send(404, "text", "Sorry, this page does not exist!");
     }
   });
 

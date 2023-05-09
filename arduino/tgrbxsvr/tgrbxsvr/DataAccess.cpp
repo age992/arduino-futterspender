@@ -204,7 +204,7 @@ bool DataAccess::updateUserSettings(UserSettings userSettings){
 }
 
 Schedule *DataAccess::getSelectedSchedule() {
-  Schedule schedule;
+  Schedule* schedulePointer = nullptr;
 
   char *sql = "SELECT * FROM Schedules LIMIT 1 WHERE Selected=1";
   sqlite3_stmt *stmt;
@@ -213,6 +213,7 @@ Schedule *DataAccess::getSelectedSchedule() {
   rc = sqlite3_step(stmt);
 
   if (rc == SQLITE_ROW) {
+    Schedule schedule;
     schedule.ID = sqlite3_column_int(stmt, 0);
     schedule.CreatedOn = sqlite3_column_int64(stmt, 1);
     schedule.Name = sqlite3_column_string(stmt, 2);
@@ -240,10 +241,11 @@ Schedule *DataAccess::getSelectedSchedule() {
     schedule.MaxTimes = sqlite3_column_int(stmt, 7);
     schedule.MaxTimesStartTime = sqlite3_column_int64(stmt, 8);
     schedule.OnlyWhenEmpty = sqlite3_column_int(stmt, 9) == 1;
+    *schedulePointer = schedule;
   }
 
   sqlite3_finalize(stmt);
-  return &schedule;
+  return schedulePointer;
 }
 
 bool DataAccess::setSelectSchedule(int scheduleID, bool selected) {

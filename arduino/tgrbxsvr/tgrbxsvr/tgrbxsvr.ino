@@ -123,7 +123,7 @@ void loop() {
         lastFedTimestamp = currentTimestamp;
         currentFeedTargetWeight = 0;
         numTimesFedToday++;
-        if (selectedSchedule->Mode == MaxTimes && numTimesFedToday == selectedSchedule->MaxTimes) {
+        if (selectedSchedule != nullptr && selectedSchedule->Mode == MaxTimes && numTimesFedToday == selectedSchedule->MaxTimes) {
           //set wait timestamp tomorrow
         }
         closeContainer();
@@ -295,7 +295,7 @@ void handleNotifications() {
 }
 
 bool feedPending() {
-  if (!selectedSchedule->Active) {
+  if (selectedSchedule == nullptr || !selectedSchedule->Active) {
     return false;
   }
 
