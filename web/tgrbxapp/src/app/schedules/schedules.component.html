@@ -97,7 +97,7 @@
           >
             <mat-option *ngFor="let modeID of modeIDs" [value]="modeID">
               <ng-container [ngSwitch]="true">
-                <div *ngSwitchCase="modeID == EScheduleMode.Max">
+                <div *ngSwitchCase="modeID == EScheduleMode.MaxTimes">
                   Nach Anzahl
                 </div>
                 <div *ngSwitchCase="modeID == EScheduleMode.FixedDaytime">
@@ -109,7 +109,7 @@
         </mat-form-field>
 
         <ng-container [ngSwitch]="true">
-          <div *ngSwitchCase="selectedSchedule.Mode == EScheduleMode.Max">
+          <div *ngSwitchCase="selectedSchedule.Mode == EScheduleMode.MaxTimes">
             <div id="divMaxTimes">
               <app-counter
                 [value]="selectedSchedule.MaxTimes!"

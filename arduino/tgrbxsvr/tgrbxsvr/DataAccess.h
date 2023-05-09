@@ -27,9 +27,11 @@ public:
   Schedule *getSelectedSchedule();
   bool setSelectSchedule(int scheduleID, bool selected);
   bool setActiveSchedule(int scheduleID, bool active);
+  std::vector<Schedule> getAllSchedules();
+  Schedule* getScheduleByID(int id);
   int insertSchedule(Schedule schedule);
   bool updateSchedule(Schedule schedule);
-  bool deleteSchedule(Schedule schedule);
+  bool deleteSchedule(int scheduleID);
   
 };
 

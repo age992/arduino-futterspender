@@ -15,7 +15,7 @@
     <div>
       <div id="foodPlanDetails">
         <ng-container [ngSwitch]="true">
-          <div *ngSwitchCase="currentSchedule.Mode == EScheduleMode.Max">
+          <div *ngSwitchCase="currentSchedule.Mode == EScheduleMode.MaxTimes">
             <div>Typ: Nach Anzahl</div>
             <div>
               Maximal {{ currentSchedule.MaxTimes }} Fütterungen pro Tag
@@ -56,7 +56,9 @@
         </div>
       </ng-container>
       <ng-container
-        *ngIf="currentSchedule && currentSchedule.Mode == EScheduleMode.Max"
+        *ngIf="
+          currentSchedule && currentSchedule.Mode == EScheduleMode.MaxTimes
+        "
       >
         <span>Verbleinde Fütterungen</span>
         <div id="divFoodPlanNextValue">

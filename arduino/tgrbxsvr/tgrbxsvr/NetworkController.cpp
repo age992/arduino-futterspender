@@ -1,3 +1,4 @@
+#include <vector>
 #include "NetworkController.h"
 #include "freertos/FreeRTOS.h"
 #include <freertos/task.h>
@@ -5,6 +6,7 @@
 #include <WiFi.h>
 #include <WiFiUdp.h>
 #include <AsyncTCP.h>
+#include "AsyncJson.h"
 #include <ESPAsyncWebServer.h>
 #include <NTPClient.h>
 #include <ESPmDNS.h>
@@ -36,6 +38,8 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
     Serial.println("Client disconnected");
   }
 }
+
+//void switchSelectedSchedule(Schedule* newSchedule){}
 
 //-- Rest API handlers --//
 
@@ -70,46 +74,70 @@ void handleApiScheduleActivate(AsyncWebServerRequest *request) {
   }
 }
 
-void handleApiSchedule(AsyncWebServerRequest *request) {
-  WebRequestMethodComposite method = request->method();
+void handleApiScheduleGet(AsyncWebServerRequest *request) {
+  if (request->hasParam("id")) {
+    try {
+      AsyncWebParameter *pId = request->getParam("id");
+      const int id = std::stoi(pId->value().c_str());
+      Schedule *schedule = dataAccess.getScheduleByID(id);
 
-  switch (method) {
-    case HTTP_GET:
-      {
-        break;
+      if (schedule == nullptr) {
+        //return empty response
+      } else {
+        //return serialized response
       }
+    } catch (...) {
+      request->send(400);
+    }
+  } else {
+    std::vector<Schedule> schedules = dataAccess.getAllSchedules();
+    //return serialized response
+  }
+}
+
+void handleApiScheduleDelete(AsyncWebServerRequest *request) {
+  if (!request->hasParam("id")) {
+    request->send(400);
+  }
+  try {
+    AsyncWebParameter *pId = request->getParam("id");
+    const int id = std::stoi(pId->value().c_str());
+    if (dataAccess.deleteSchedule(id)) {
+      if (selectedSchedule != nullptr && selectedSchedule->ID == id) {
+        selectedSchedule = nullptr;
+      }
+      request->send(200);
+    } else {
+      request->send(404);
+    }
+  } catch (...) {
+    request->send(400);
+  }
+}
+
+void handleApiSchedule(AsyncWebServerRequest *request, uint8_t *data) {
+  WebRequestMethodComposite method = request->method();
+  
+  switch (method) {
     case HTTP_POST:
       {
+        Serial.print("POST ");
         break;
       }
     case HTTP_PUT:
       {
-        break;
-      }
-    case HTTP_DELETE:
-      {
+        Serial.print("PUT ");
         break;
       }
   }
-
+  Serial.println("Schedule data: ");
+  Serial.println(reinterpret_cast<char*>(data));
   request->send(400);
 }
 
 void handleApiSettings(AsyncWebServerRequest *request) {
   WebRequestMethodComposite method = request->method();
-
-  switch (method) {
-    case HTTP_GET:
-      {
-        break;
-      }
-    case HTTP_POST:
-      {
-        break;
-      }
-  }
-
-  request->send(400);
+  request->send(200);
 }
 
 void handleApiContainer(AsyncWebServerRequest *request) {
@@ -132,9 +160,12 @@ void handleApiContainer(AsyncWebServerRequest *request) {
 
 //---//
 
-bool NetworkController::initNetworkConnection(Config config) {
-  Serial.println("Connecting to WiFi...");
-  WiFi.begin(config.ssid, config.password);
+bool NetworkController::initNetworkConnection(Config* config) {
+  Serial.print("Connecting to WiFi...");
+  Serial.print(config->ssid);
+  Serial.print(" ");
+  Serial.println(config->password);
+  WiFi.begin(config->ssid, config->password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println(".");
@@ -144,7 +175,7 @@ bool NetworkController::initNetworkConnection(Config config) {
   Serial.println(WiFi.localIP());
 
   Serial.println("Start MDNS...");
-  const char *domainName = config.localDomainName != nullptr ? config.localDomainName : "futterspender";
+  const char *domainName = config->localDomainName != nullptr ? config->localDomainName : "futterspender";
   if (MDNS.begin(domainName)) {
     Serial.println("MDNS started!");
   } else {
@@ -173,9 +204,18 @@ bool NetworkController::initWebserver() {
   server.on("/api/schedule/activate", [](AsyncWebServerRequest *request) {
     handleApiScheduleActivate(request);
   });
-  server.on("/api/schedule", [](AsyncWebServerRequest *request) {
-    handleApiSchedule(request);
+  server.on("/api/schedule", HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleApiScheduleGet(request);
   });
+  server.on("/api/schedule", HTTP_DELETE, [](AsyncWebServerRequest *request) {
+    handleApiScheduleDelete(request);
+  });
+  server.onRequestBody([](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+    if (request->url() == "/api/schedule/activate") {
+      handleApiSchedule(request, data);
+    }
+  });
+
   server.on("/api", [](AsyncWebServerRequest *request) {
     request->send(200, "text/html", "Api base route");
   });
@@ -196,6 +236,14 @@ bool NetworkController::initWebserver() {
 
   ws.onEvent(onWsEvent);
   server.addHandler(&ws);
+  /*
+  AsyncCallbackJsonWebHandler *scheduleJsonHandler = new AsyncCallbackJsonWebHandler("/api/schedule", HTTP_POST, [](AsyncWebServerRequest *request, JsonVariant &json) {
+    JsonObject &jsonObj = json.as<JsonObject>();
+    Serial.println("Received Schedule: ");
+    jsonObj.prettyPrintTo(Serial);
+    // ...
+  });
+  server.addHandler(scheduleJsonHandler);*/
 
   server.begin();
   Serial.println("Web Server started");

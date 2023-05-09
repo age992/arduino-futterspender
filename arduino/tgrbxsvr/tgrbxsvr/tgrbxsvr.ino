@@ -78,10 +78,13 @@ void setup() {
 
   dataAccess.init();
   config = dataAccess.getConfig();
+  Serial.println("Loaded Config");
   systemSettings = dataAccess.getSystemSettings();
+  Serial.println("Loaded SystemSettings");
   userSettings = dataAccess.getUserSettings();
+  Serial.println("Loaded UserSettings");
 
-  networkController.initNetworkConnection(*config);
+  networkController.initNetworkConnection(config);
   networkController.initNTP();
   currentTimestamp = networkController.getCurrentTime();
   today = getDay(currentTimestamp);

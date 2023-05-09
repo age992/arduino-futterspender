@@ -45,3 +45,29 @@ String serializeDaytimes(std::vector<long> data) {
   serializeJson(doc, serialized);
   return serialized;
 };
+
+Schedule deserializeSchedule(String data){
+  
+};
+
+std::vector<long> deserializeDaytimes(String data) {
+  std::vector<long> daytimes;
+  StaticJsonDocument<512> doc;
+  DeserializationError error = deserializeJson(doc, data.c_str());
+
+  if (error) {
+    Serial.println(F("Failed to deserialize daytimes for schedule"));
+    return daytimes;
+  };
+
+  JsonArray jsonArray = doc.as<JsonArray>();
+
+  for (JsonVariant v : jsonArray) {
+    daytimes.push_back(v.as<long>());
+  }
+
+  return daytimes;
+}
+
+Notification deserializeNotification(String data) {
+}

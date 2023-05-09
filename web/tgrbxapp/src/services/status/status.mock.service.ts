@@ -45,7 +45,7 @@ export class StatusMockService implements IStatusService {
           PlateLoad: Math.floor(Math.random() * 10 * 100) / 100,
           MotorOperation: true,
           SDCardConnection: true,
-          WiFiConnection: true,
+          Open: false,
         };
         this.lastUpdate = now;
         this.machineStatusInternal = newMachineStatus;

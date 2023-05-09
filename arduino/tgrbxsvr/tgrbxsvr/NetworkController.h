@@ -6,11 +6,11 @@
 
 extern DataAccess dataAccess;
 extern Schedule* selectedSchedule;
-extern UserSettings* userSetting;
+extern UserSettings* userSettings;
 
 class NetworkController {
 public:
-  bool initNetworkConnection(Config config);
+  bool initNetworkConnection(Config* config);
 
   bool initNTP();
   long getCurrentTime();

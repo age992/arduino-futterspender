@@ -16,7 +16,7 @@
 
 
 
-struct SystemSettings{
+struct SystemSettings {
   int CalibrationWeight;
   double ContainerScale;
   int ContainerOffset;
@@ -34,13 +34,13 @@ struct Config {
   char password[64];
 };
 
-struct Notification{
+struct Notification {
   bool Active;
   bool Email;
   bool Phone;
 };
 
-struct NotificationList{
+struct NotificationList {
   Notification ContainerEmpty;
   Notification DidNotEatInADay;
 };
@@ -56,7 +56,7 @@ struct UserSettings {
   int Theme;
 };
 
-const char* configPath = "/config.json";
+const char *configPath = "/config.json";
 Config config;
 
 const String frontendRootPath = "/frontend/";
@@ -83,18 +83,18 @@ const int LOADCELL_B_SCK_PIN = 25;
 const int LOADCELL_B_DOUT_PIN = 33;
 HX711 scale_B;
 
-double getScaleValue(HX711 scale){
- // Serial.println("Get scale value, reading scale time is...");
+double getScaleValue(HX711 scale) {
+  // Serial.println("Get scale value, reading scale time is...");
   //const long now = millis();
   long val = scale.get_units(LOADCELL_TIMES) * 10;
   //const long seconds = (millis() - now);
   //Serial.println(std::to_string(seconds).c_str());
-  double scaleValue =  (double) val / 10;
+  double scaleValue = (double)val / 10;
   //Serial.println(scaleValue);
   return scaleValue;
 }
 
-void handleApiTime(){
+void handleApiTime() {
   timeClient.update();
 
   String formattedDate = timeClient.getFormattedTime();
@@ -102,7 +102,7 @@ void handleApiTime(){
   server.send(200, "text/html", response);
 }
 
-void handleApiContainer(){
+void handleApiContainer() {
   Serial.println("Handle container request");
   server.send(200);
   /*
@@ -120,19 +120,19 @@ void handleApiContainer(){
   }*/
 }
 
-void handleApiOpenFood(){
+void handleApiOpenFood() {
   Serial.println("Open...");
   servo.write(90);
   server.send(200);
 }
-void handleApiCloseFood(){
+void handleApiCloseFood() {
   Serial.println("Close...");
   servo.write(0);
   server.send(200);
 }
 
-void handleApiStatus(){
- // Serial.println("Handle status request");
+void handleApiStatus() {
+  // Serial.println("Handle status request");
 
   String response;
   DynamicJsonDocument doc(1024);
@@ -151,56 +151,56 @@ void handleApiStatus(){
   server.send(200, "application/json", response);
 }
 
-void handleApiUserSettings(){
+void handleApiUserSettings() {
   Serial.println("Handle scale request");
   server.send(200);
 }
 
-void handleApiScaleTare(){
+void handleApiScaleTare() {
   Serial.print("Handle Api scale tare ");
   String param = server.arg("scale");
 
-  if(param == "A"){
+  if (param == "A") {
     Serial.println("of scale A");
     scale_A.tare(LOADCELL_TIMES);
     systemSettings.ContainerOffset = scale_A.get_offset();
     saveSystemSettings();
     server.send(200);
-  }else if(param == "B"){
+  } else if (param == "B") {
     Serial.println("of scale B");
     scale_B.tare(LOADCELL_TIMES);
-    systemSettings.ContainerOffset = scale_B.get_offset();
+    systemSettings.PlateOffset = scale_B.get_offset();
     saveSystemSettings();
     server.send(200);
-  }else{
+  } else {
     Serial.println("failed");
     server.send(400);
   }
 }
 
-void handleApiScaleCalibration(){
+void handleApiScaleCalibration() {
   Serial.print("Hanlde Api scale calibration ");
   String param = server.arg("scale");
 
-  if(param == "A"){
+  if (param == "A") {
     Serial.println("of scale A");
     scale_A.calibrate_scale(systemSettings.CalibrationWeight, 5);
     systemSettings.ContainerScale = scale_A.get_scale();
     saveSystemSettings();
     server.send(200);
-  }else if(param == "B"){
+  } else if (param == "B") {
     Serial.println("of scale B");
     scale_B.calibrate_scale(systemSettings.CalibrationWeight, 5);
-    systemSettings.ContainerScale = scale_B.get_scale();
+    systemSettings.PlateScale = scale_B.get_scale();
     saveSystemSettings();
     server.send(200);
-  }else{
+  } else {
     Serial.println("failed");
     server.send(400);
   }
 }
 
-void setup(){
+void setup() {
   // Serial port for debugging purposes
   Serial.begin(115200);
 
@@ -209,10 +209,10 @@ void setup(){
     Serial.println("Couldn't initialize SD Card. Retry in 5 seconds...");
     delay(5000);
   }
-    
+
   Serial.println("SD card initialized.");
 
-  
+
   Serial.println("Init DB...");
 
   sqlite3_initialize();
@@ -227,11 +227,15 @@ void setup(){
   Serial.println("Setting up scale A...");
   scale_A.begin(LOADCELL_A_DOUT_PIN, LOADCELL_A_SCK_PIN);
 
-  while(!scale_A.is_ready()){
+  while (!scale_A.is_ready()) {
     Serial.println(".");
     delay(2000);
   }
 
+  Serial.print("ContainerScale: ");
+  Serial.println(systemSettings.ContainerScale);
+  Serial.print("ContainerOffset: ");
+  Serial.println(systemSettings.ContainerOffset);
   scale_A.tare(LOADCELL_TIMES);
   scale_A.set_scale(systemSettings.ContainerScale);
   scale_A.set_offset(systemSettings.ContainerOffset);
@@ -241,16 +245,20 @@ void setup(){
   while(Serial.available()) Serial.read();
   scale_A.calibrate_scale(152, 5);*/
   Serial.println("Scale A ready.");
-  
+
   Serial.println("Setting up scale B...");
   scale_B.begin(LOADCELL_B_DOUT_PIN, LOADCELL_B_SCK_PIN);
 
-  while(!scale_B.is_ready()){
+  while (!scale_B.is_ready()) {
     Serial.println(".");
     delay(2000);
   }
 
-  scale_B.tare(LOADCELL_TIMES); 
+Serial.print("PlateScale: ");
+  Serial.println(systemSettings.PlateScale);
+  Serial.print("PlateOffset: ");
+  Serial.println(systemSettings.PlateOffset);
+  scale_B.tare(LOADCELL_TIMES);
   scale_B.set_scale(systemSettings.PlateScale);
   scale_B.set_offset(systemSettings.PlateOffset);
   /*Serial.println("\nPut 152 gram on scale B, press a key to continue");
@@ -262,7 +270,7 @@ void setup(){
   //Load config
   Serial.println("Loading config.");
 
-  while(!loadConfiguration(configPath, config)){
+  while (!loadConfiguration(configPath, config)) {
     Serial.println("Couldn't read config file. Retry in 5 seconds...");
     delay(5000);
   }
@@ -287,51 +295,51 @@ void setup(){
   Serial.println("Start mDNS...");
   if (MDNS.begin("futterspender")) {
     Serial.println("MDNS started!");
-  }else{
+  } else {
     Serial.println("Couldn't start mdns");
   }
-  
+
   Serial.println("Start servo");
   servo.attach(servoPin);
 
-  server.on("/api/time", [](){
+  server.on("/api/time", []() {
     handleApiTime();
   });
-  server.on("/api/container", [](){
+  server.on("/api/container", []() {
     handleApiContainer();
   });
-  server.on("/api/status", [](){
+  server.on("/api/status", []() {
     handleApiStatus();
   });
-  server.on("/api/settings/scale/tare", [](){
+  server.on("/api/settings/scale/tare", []() {
     handleApiScaleTare();
   });
-  server.on("/api/settings/scale/calibration", [](){
+  server.on("/api/settings/scale/calibration", []() {
     handleApiScaleCalibration();
   });
-  server.on("/api/settings", [](){
+  server.on("/api/settings", []() {
     handleApiUserSettings();
   });
-  server.on("/api/food/open", [](){
+  server.on("/api/food/open", []() {
     handleApiOpenFood();
   });
-  server.on("/api/food/close", [](){
+  server.on("/api/food/close", []() {
     handleApiCloseFood();
   });
-  server.on("/api", [](){
+  server.on("/api", []() {
     server.send(200, "text/html", "Api base route");
   });
 
-  server.serveStatic("/", SD, frontendRootPath.c_str());//.setDefaultFile("index.html");
+  server.serveStatic("/", SD, frontendRootPath.c_str());  //.setDefaultFile("index.html");
 
-  server.onNotFound([](){
+  server.onNotFound([]() {
     if (server.method() == HTTP_OPTIONS) {
       server.send(200);
     } else {
       server.send(404, "application/json", "{\"message\":\"Not found\"}");
     }
   });
-  
+
   server.enableCORS(true);
   server.begin();
   Serial.println("Web Server started");
@@ -342,53 +350,53 @@ void setup(){
 
 void loop() {
   server.handleClient();
-  delay(2);//allow the cpu to switch to other tasks
+  delay(2);  //allow the cpu to switch to other tasks
 }
 
-const char* data = "Callback function called";
-static int callback(void *data, int argc, char **argv, char **azColName){
-   int i;
-   Serial.printf("%s: ", (const char*)data);
-   for (i = 0; i<argc; i++){
-       Serial.printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-   }
-   Serial.printf("\n");
-   return 0;
+const char *data = "Callback function called";
+static int callback(void *data, int argc, char **argv, char **azColName) {
+  int i;
+  Serial.printf("%s: ", (const char *)data);
+  for (i = 0; i < argc; i++) {
+    Serial.printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+  }
+  Serial.printf("\n");
+  return 0;
 }
 
 int openDb(const char *filename, sqlite3 **db) {
-   int rc = sqlite3_open(filename, db);
-   if (rc) {
-       Serial.printf("Can't open database: %s\n", sqlite3_errmsg(*db));
-       return rc;
-   } else {
-       Serial.printf("Opened database successfully\n");
-   }
-   return rc;
+  int rc = sqlite3_open(filename, db);
+  if (rc) {
+    Serial.printf("Can't open database: %s\n", sqlite3_errmsg(*db));
+    return rc;
+  } else {
+    Serial.printf("Opened database successfully\n");
+  }
+  return rc;
 }
 
 char *zErrMsg = 0;
 int db_exec(sqlite3 *db, const char *sql) {
-   Serial.println(sql);
-   long start = micros();
-   int rc = sqlite3_exec(db, sql, callback, (void*)data, &zErrMsg);
-   if (rc != SQLITE_OK) {
-       Serial.printf("SQL error: %s\n", zErrMsg);
-       sqlite3_free(zErrMsg);
-   } else {
-       Serial.printf("Operation done successfully\n");
-   }
-   Serial.print(F("Time taken:"));
-   Serial.println(micros()-start);
-   return rc;
+  Serial.println(sql);
+  long start = micros();
+  int rc = sqlite3_exec(db, sql, callback, (void *)data, &zErrMsg);
+  if (rc != SQLITE_OK) {
+    Serial.printf("SQL error: %s\n", zErrMsg);
+    sqlite3_free(zErrMsg);
+  } else {
+    Serial.printf("Operation done successfully\n");
+  }
+  Serial.print(F("Time taken:"));
+  Serial.println(micros() - start);
+  return rc;
 }
 
-int loadSystemSettings(){
-  if (openDb("/sd/data/System.db", &dbSystem)){
+int loadSystemSettings() {
+  if (openDb("/sd/data/System.db", &dbSystem)) {
     return SQLITE_ERROR;
   }
 
-  char* sql = "SELECT * FROM Settings LIMIT 1";
+  char *sql = "SELECT * FROM Settings LIMIT 1";
   sqlite3_stmt *stmt;
 
   rc = sqlite3_prepare_v2(dbSystem, sql, -1, &stmt, NULL);
@@ -398,7 +406,7 @@ int loadSystemSettings(){
     systemSettings.CalibrationWeight = sqlite3_column_int(stmt, 0);
     systemSettings.ContainerScale = sqlite3_column_double(stmt, 1);
     systemSettings.ContainerOffset = sqlite3_column_int(stmt, 2);
-    systemSettings.PlateScale= sqlite3_column_double(stmt, 3);
+    systemSettings.PlateScale = sqlite3_column_double(stmt, 3);
     systemSettings.PlateOffset = sqlite3_column_int(stmt, 4);
   }
 
@@ -406,14 +414,14 @@ int loadSystemSettings(){
   return 0;
 }
 
-int saveSystemSettings(){
+int saveSystemSettings() {
   sqlite3_stmt *stmt;
   const char *sql = "UPDATE Settings "
-    "SET CalibrationWeight = ?, "
-    "SET ContainerScale = ?, "
-    "SET ContainerOffset = ?, "
-    "SET PlateScale = ?, "
-    "SET PlateOffset = ?;";
+                    "SET CalibrationWeight = ?, "
+                    "ContainerScale = ?, "
+                    "ContainerOffset = ?, "
+                    "PlateScale = ?, "
+                    "PlateOffset = ?;";
 
   rc = sqlite3_prepare_v2(dbSystem, sql, -1, &stmt, NULL);
 
@@ -424,14 +432,19 @@ int saveSystemSettings(){
   rc = sqlite3_bind_int(stmt, 5, systemSettings.PlateOffset);
 
   rc = sqlite3_step(stmt);
+  if (sqlite3_step(stmt) != SQLITE_DONE) {
+    Serial.printf("ERROR executing stmt: %s\n", sqlite3_errmsg(dbSystem));
+    return rc;
+  }
+
   rc = sqlite3_finalize(stmt);
   return rc;
 }
 
 bool loadConfiguration(const char *filename, Config &config) {
-  if(!SD.exists(filename)){
-     Serial.println(F("Config file not found"));
-     return false;
+  if (!SD.exists(filename)) {
+    Serial.println(F("Config file not found"));
+    return false;
   }
 
   File file = SD.open(filename);
@@ -439,7 +452,7 @@ bool loadConfiguration(const char *filename, Config &config) {
   StaticJsonDocument<512> doc;
 
   DeserializationError error = deserializeJson(doc, file);
-  if (error){
+  if (error) {
     Serial.println(F("Failed to deserialize config file"));
     return false;
   };
