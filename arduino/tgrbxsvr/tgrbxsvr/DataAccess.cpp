@@ -8,7 +8,6 @@
 #include <stdlib.h>
 
 bool initialized = false;
-int rc;
 
 const char *configPath = "/config.json";
 const String dbPrefix = "/sd";
@@ -19,7 +18,7 @@ sqlite3 *dbHistory;
 sqlite3 *dbUser;
 
 int openDb(const char *filename, sqlite3 **db) {
-  rc = sqlite3_open(filename, db);
+  int rc = sqlite3_open(filename, db);
   if (rc) {
     Serial.printf("Can't open database: %s\n", sqlite3_errmsg(*db));
     return rc;
@@ -73,7 +72,7 @@ Config *DataAccess::getConfig() {
     return nullptr;
   }
 
-  Config* configObject = new Config();
+  Config *configObject = new Config();
   File file = SD.open(configPath);
   StaticJsonDocument<512> doc;
 
@@ -87,19 +86,19 @@ Config *DataAccess::getConfig() {
   strlcpy(configObject->password, doc["password"], sizeof(configObject->password));
   strlcpy(configObject->localDomainName, doc["localDomainName"], sizeof(configObject->localDomainName));
   file.close();
-  
+
   return configObject;
 }
 
 //--- DB: System ---
 
 SystemSettings *DataAccess::getSystemSettings() {
-  SystemSettings* settings = new SystemSettings();
+  SystemSettings *settings = new SystemSettings();
 
   char *sql = "SELECT * FROM Settings LIMIT 1";
   sqlite3_stmt *stmt;
 
-  rc = sqlite3_prepare_v2(dbSystem, sql, -1, &stmt, NULL);
+  int rc = sqlite3_prepare_v2(dbSystem, sql, -1, &stmt, NULL);
   rc = sqlite3_step(stmt);
 
   if (rc == SQLITE_ROW) {
@@ -124,7 +123,7 @@ int DataAccess::getNumFedFromTo(long from, long to) {
   char *sql = "SELECT COUNT(*) FROM Event WHERE Type = ? AND CreatedOn >= ? AND CreatedOn < ?";
   sqlite3_stmt *stmt;
 
-  rc = sqlite3_prepare_v2(dbHistory, sql, -1, &stmt, NULL);
+  int rc = sqlite3_prepare_v2(dbHistory, sql, -1, &stmt, NULL);
   rc = sqlite3_bind_int(stmt, 1, Feed);
   rc = sqlite3_bind_int64(stmt, 2, from);
   rc = sqlite3_bind_int64(stmt, 3, to);
@@ -141,12 +140,12 @@ int DataAccess::getNumFedFromTo(long from, long to) {
 }
 
 long DataAccess::getLastFedTimestampBefore(long before) {
-  long lastFedTimestamp;
+  long lastFedTimestamp = 0;
 
   char *sql = "SELECT CreatedOn FROM Event LIMIT 1 WHERE Type = ? AND CreatedOn <= ?";
   sqlite3_stmt *stmt;
 
-  rc = sqlite3_prepare_v2(dbHistory, sql, -1, &stmt, NULL);
+  int rc = sqlite3_prepare_v2(dbHistory, sql, -1, &stmt, NULL);
   rc = sqlite3_bind_int(stmt, 1, Feed);
   rc = sqlite3_bind_int64(stmt, 2, before);
   rc = sqlite3_step(stmt);
@@ -165,12 +164,12 @@ long DataAccess::getLastFedTimestampBefore(long before) {
 //--- DB: User ---
 
 UserSettings *DataAccess::getUserSettings() {
-  UserSettings* settings = new UserSettings();
+  UserSettings *settings = new UserSettings();
 
   char *sql = "SELECT * FROM Settings LIMIT 1";
   sqlite3_stmt *stmt;
 
-  rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
+  int rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
   rc = sqlite3_step(stmt);
 
   if (rc == SQLITE_ROW) {
@@ -187,7 +186,7 @@ UserSettings *DataAccess::getUserSettings() {
       return nullptr;
     };
 
-    NotificationList* notificationList = new NotificationList();
+    NotificationList *notificationList = new NotificationList();
     notificationList->ContainerEmpty.Active = doc["ContainerEmpty"]["Active"].as<bool>();
     notificationList->ContainerEmpty.Email = doc["ContainerEmpty"]["Email"].as<bool>();
     notificationList->ContainerEmpty.Phone = doc["ContainerEmpty"]["Phone"].as<bool>();
@@ -212,20 +211,20 @@ bool DataAccess::updateUserSettings(UserSettings userSettings) {
   return false;
 }
 
-Schedule *readScheduleRow(sqlite3_stmt* stmt) {
-  Schedule schedule;
-  schedule.ID = sqlite3_column_int(stmt, 0);
-  schedule.CreatedOn = sqlite3_column_int64(stmt, 1);
-  schedule.Name = sqlite3_column_string(stmt, 2);
-  schedule.Mode = sqlite3_column_int(stmt, 3);
-  schedule.Selected = sqlite3_column_int(stmt, 4) == 1;
-  schedule.Active = sqlite3_column_int(stmt, 5) == 1;
+Schedule *readScheduleRow(sqlite3_stmt *stmt) {
+  Schedule *schedule = new Schedule();
+  schedule->ID = sqlite3_column_int(stmt, 0);
+  schedule->CreatedOn = sqlite3_column_int64(stmt, 1);
+  schedule->Name = sqlite3_column_string(stmt, 2);
+  schedule->Mode = sqlite3_column_int(stmt, 3);
+  schedule->Selected = sqlite3_column_int(stmt, 4) == 1;
+  schedule->Active = sqlite3_column_int(stmt, 5) == 1;
   String daytimesString = sqlite3_column_string(stmt, 6);
-  schedule.Daytimes = deserializeDaytimes(daytimesString);
-  schedule.MaxTimes = sqlite3_column_int(stmt, 7);
-  schedule.MaxTimesStartTime = sqlite3_column_int64(stmt, 8);
-  schedule.OnlyWhenEmpty = sqlite3_column_int(stmt, 9) == 1;
-  return &schedule;
+  schedule->Daytimes = deserializeDaytimes(daytimesString);
+  schedule->MaxTimes = sqlite3_column_int(stmt, 7);
+  schedule->MaxTimesStartTime = sqlite3_column_int64(stmt, 8);
+  schedule->OnlyWhenEmpty = sqlite3_column_int(stmt, 9) == 1;
+  return schedule;
 }
 
 Schedule *DataAccess::getSelectedSchedule() {
@@ -234,7 +233,7 @@ Schedule *DataAccess::getSelectedSchedule() {
   char *sql = "SELECT * FROM Schedules LIMIT 1 WHERE Selected=1";
   sqlite3_stmt *stmt;
 
-  rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
+  int rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
   rc = sqlite3_step(stmt);
 
   if (rc == SQLITE_ROW) {
@@ -253,7 +252,7 @@ bool DataAccess::setSelectSchedule(int scheduleID, bool selected) {
                     "SET Selected = ? "
                     "WHERE ID = ?;";
 
-  rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
+  int rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
 
   rc = sqlite3_bind_int(stmt, 1, selected ? 1 : 0);
   rc = sqlite3_bind_int(stmt, 2, scheduleID);
@@ -275,7 +274,7 @@ bool DataAccess::setActiveSchedule(int scheduleID, bool active) {
                     "Active = ? "
                     "WHERE ID = ?;";
 
-  rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
+  int rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
 
   rc = sqlite3_bind_int(stmt, 1, active ? 1 : 0);
   rc = sqlite3_bind_int(stmt, 2, scheduleID);
@@ -296,16 +295,16 @@ std::vector<Schedule> DataAccess::getAllSchedules() {
   char *sql = "SELECT * FROM Schedules;";
   sqlite3_stmt *stmt;
 
-  rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
+  int rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
   rc = sqlite3_step(stmt);
 
   while (sqlite3_step(stmt) == SQLITE_ROW) {
-    Schedule* schedulePointer = readScheduleRow(stmt);
-    if(schedulePointer != nullptr){
+    Schedule *schedulePointer = readScheduleRow(stmt);
+    if (schedulePointer != nullptr) {
       schedules.push_back(*schedulePointer);
     }
   }
-  
+
   if (rc == SQLITE_ERROR) {
     Serial.printf("ERROR executing stmt: %s\n", sqlite3_errmsg(dbUser));
   }
@@ -320,7 +319,7 @@ Schedule *DataAccess::getScheduleByID(int id) {
   char *sql = "SELECT * FROM Schedules LIMIT 1 WHERE ID = ?;";
   sqlite3_stmt *stmt;
 
-  rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
+  int rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
   rc = sqlite3_bind_int(stmt, 1, id);
   rc = sqlite3_step(stmt);
 
@@ -335,18 +334,66 @@ Schedule *DataAccess::getScheduleByID(int id) {
 }
 
 int DataAccess::insertSchedule(Schedule schedule) {
-  return 0;
+  const char *sql = "INSERT INTO Schedules (CreatedOn, Name, Mode, Selected, Active, Daytimes, MaxTimes, MaxTimesStartTime, OnlyWhenEmpty) "
+      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+  
+  sqlite3_stmt *stmt;
+  int rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
+
+  sqlite3_bind_int64(stmt, 1, schedule.CreatedOn);
+  sqlite3_bind_text(stmt, 2, schedule.Name.c_str(), strlen(schedule.Name.c_str()), SQLITE_TRANSIENT);
+  sqlite3_bind_int(stmt, 3, schedule.Mode);
+  sqlite3_bind_int(stmt, 4, schedule.Active ? 1 : 0);
+  sqlite3_bind_int(stmt, 5, schedule.Selected ? 1 : 0);
+  const char* dayTimesString = serializeDaytimes(schedule.Daytimes).c_str();
+  sqlite3_bind_text(stmt, 6, dayTimesString, strlen(dayTimesString), SQLITE_TRANSIENT);
+  sqlite3_bind_int(stmt, 7, schedule.MaxTimes);
+  sqlite3_bind_int64(stmt, 8, schedule.MaxTimesStartTime);
+  sqlite3_bind_int(stmt, 9, schedule.OnlyWhenEmpty ? 1 : 0);
+
+  rc = sqlite3_step(stmt);
+  if (rc != SQLITE_DONE) {
+    Serial.printf("ERROR executing stmt: %s\n", sqlite3_errmsg(dbUser));
+  }
+
+  rc = sqlite3_finalize(stmt);
+  return sqlite3_last_insert_rowid(dbUser);
 }
 
 bool DataAccess::updateSchedule(Schedule schedule) {
-  return false;
+  const char *sql = "UPDATE Schedules "
+                    "SET CreatedOn=?, Name=?, Mode=?, Selected=?, Active=?, Daytimes=?, MaxTimes=?, MaxTimesStartTime=?, OnlyWhenEmpty=? "
+                    "WHERE ID=?";
+  
+  sqlite3_stmt *stmt;
+  int rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
+
+  sqlite3_bind_int64(stmt, 1, schedule.CreatedOn);
+  sqlite3_bind_text(stmt, 2, schedule.Name.c_str(), strlen(schedule.Name.c_str()), SQLITE_TRANSIENT);
+  sqlite3_bind_int(stmt, 3, schedule.Mode);
+  sqlite3_bind_int(stmt, 4, schedule.Active ? 1 : 0);
+  sqlite3_bind_int(stmt, 5, schedule.Selected ? 1 : 0);
+  const char* dayTimesString = serializeDaytimes(schedule.Daytimes).c_str();
+  sqlite3_bind_text(stmt, 6, dayTimesString, strlen(dayTimesString), SQLITE_TRANSIENT);
+  sqlite3_bind_int(stmt, 7, schedule.MaxTimes);
+  sqlite3_bind_int64(stmt, 8, schedule.MaxTimesStartTime);
+  sqlite3_bind_int(stmt, 9, schedule.OnlyWhenEmpty ? 1 : 0);
+  sqlite3_bind_int(stmt, 10, schedule.ID);
+
+  rc = sqlite3_step(stmt);
+  if (rc != SQLITE_DONE) {
+    Serial.printf("ERROR executing stmt: %s\n", sqlite3_errmsg(dbUser));
+  }
+
+  rc = sqlite3_finalize(stmt);
+  return rc == SQLITE_OK;
 }
 
 bool DataAccess::deleteSchedule(int scheduleID) {
   sqlite3_stmt *stmt;
   const char *sql = "DELETE FROM Schedules WHERE ID = ?;";
 
-  rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
+  int rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
   rc = sqlite3_bind_int(stmt, 1, scheduleID);
   rc = sqlite3_step(stmt);
 
