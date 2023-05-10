@@ -5,6 +5,7 @@ import { MachineStatus } from 'src/models/MachineStatus';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 import { FetchInterval } from 'src/models/FetchInterval';
+import { WebsocketService } from '../websocket/websocket.service';
 
 @Injectable({
   providedIn: 'root',
@@ -31,7 +32,10 @@ export class StatusService implements IStatusService {
   private readonly fetchSlowGracePeriod = 6; //if no changes occur for this period of time, fetching will slow down
   private graceTimer: NodeJS.Timeout | null = null;
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private websocketService: WebsocketService
+  ) {
     this.setFetching(this.fetchIntervalNormal);
   }
 
@@ -96,7 +100,7 @@ export class StatusService implements IStatusService {
 
   fetchMachineStatus = () => {
     this.Loading.next(true);
-    const start = new Date().getMilliseconds();
+    /*const start = new Date().getMilliseconds();
     this.http
       .get<MachineStatus>(environment.apiUrl + '/status')
       .pipe(catchError((err) => this.handleError(err)))
@@ -106,7 +110,7 @@ export class StatusService implements IStatusService {
         this.notify();
         this.Loading.next(false);
         this.Connected.next(true);
-      });
+      });*/
   };
 
   startFeed = () => {

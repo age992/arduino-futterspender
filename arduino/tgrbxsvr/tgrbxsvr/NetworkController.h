@@ -8,6 +8,8 @@ extern DataAccess dataAccess;
 extern Schedule* selectedSchedule;
 extern UserSettings* userSettings;
 
+extern long getDay(long timestampMillis);
+
 class NetworkController {
 public:
   bool initNetworkConnection(Config* config);

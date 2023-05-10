@@ -20,9 +20,10 @@ const int LOADCELL_B_DOUT_PIN = 33;
 HX711 scale_B;
 
 double getScaleValue(HX711 scale) {
-  long val = scale.get_units(LOADCELL_TIMES) / 100;
+  long val = scale.get_units(LOADCELL_TIMES) * 10;
+  //Serial.print("raw val ");
+  //Serial.println(val);
   double scaleValue = (double)val / 10;
-  Serial.println(scaleValue);
   return scaleValue;
 }
 

@@ -17,6 +17,7 @@ const String frontendRootPath = "/frontend/";
 
 WiFiUDP ntpUdp;
 NTPClient ntpClient(ntpUdp);
+long startUpTimestampMS = 0;
 
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
@@ -33,6 +34,7 @@ void clearClientsTask(void *pvParameters) {
 
 void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
   if (type == WS_EVT_CONNECT) {
+    client->text("Hello from ESP32 Server");
     Serial.println("Websocket client connection received");
   } else if (type == WS_EVT_DISCONNECT) {
     Serial.println("Client disconnected");
@@ -186,15 +188,27 @@ bool NetworkController::initNetworkConnection(Config* config) {
 
 bool NetworkController::initNTP() {
   ntpClient.begin();
+  while(!ntpClient.update()){
+    Serial.println("Couldn't fetch time via NTP...");
+    delay(4000);
+  }
+  startUpTimestampMS = ntpClient.getEpochTime() * 1000;
   return true;
 }
 
 long NetworkController::getCurrentTime() {
-  ntpClient.update();
-  return ntpClient.getEpochTime();
+  //@TODO: handle millis overflow and ntp updates!
+  /*if(getDay(millis) > DAYS_UNTIL_NTP_UPDATE){
+    ntpClient.update();
+    startUpMillis = ntpClient.getEpochTime();
+  }*/
+  return startUpTimestampMS + millis();
 }
 
 bool NetworkController::initWebserver() {
+  ws.onEvent(onWsEvent);
+  server.addHandler(&ws);
+
   server.on("/api/container", [](AsyncWebServerRequest *request) {
     handleApiContainer(request);
   });
@@ -234,8 +248,6 @@ bool NetworkController::initWebserver() {
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  ws.onEvent(onWsEvent);
-  server.addHandler(&ws);
   /*
   AsyncCallbackJsonWebHandler *scheduleJsonHandler = new AsyncCallbackJsonWebHandler("/api/schedule", HTTP_POST, [](AsyncWebServerRequest *request, JsonVariant &json) {
     JsonObject &jsonObj = json.as<JsonObject>();

@@ -101,21 +101,24 @@ void setup() {
   networkController.initWebserver();
 
   previousTimestamp = currentTimestamp;
-  MachineStatus status;
-  status.ContainerLoad = machineController.getContainerLoad();
-  status.PlateLoad = machineController.getPlateLoad();
-  status.Open = false;
-  status.MotorOperation = true;
-  status.SDCardConnection = true;
-  status.WiFiConnection = true;
-  *previousStatus = status;
+  MachineStatus* status = new MachineStatus();
+  status->ContainerLoad = machineController.getContainerLoad();
+  status->PlateLoad = machineController.getPlateLoad();
+  status->Open = false;
+  status->MotorOperation = true;
+  status->SDCardConnection = true;
+  status->WiFiConnection = true;
+  previousStatus = status;
 }
 
 void loop() {
+  //Serial.print("loop ");
+  //Serial.println(millis());
   currentTimestamp = networkController.getCurrentTime();
-  *currentStatus = getUpdatedStatus();
+  currentStatus = getUpdatedStatus();
 
   if (feedPending()) {
+    Serial.println("Feed pending!");
     if (currentStatus->ContainerLoad > CONTAINER_EMPTY_THRESHOLD) {
       if (!currentStatus->Open) {
         //start feeding
@@ -140,15 +143,21 @@ void loop() {
       }
     }
   }
-
+  /*
+  Serial.print("prevTime: ");
+  Serial.println(previousTimestamp);
+  Serial.print("curTime: ");
+  Serial.println(currentTimestamp);
+  */
   const SignificantWeightChange significantChange = weightDifferenceSignificant();
   updateLoopFrequency(significantChange);
   handleCurrentData(significantChange);
   handleNotifications();
-
   previousTimestamp = currentTimestamp;
+  delete previousStatus;
   previousStatus = currentStatus;
-  delay(1 / CURRENT_LOOP_FREQ);
+  double delayVal = (1 / CURRENT_LOOP_FREQ) * 1000;
+  delay(delayVal);
 }
 
 ScaleData createScaleDataHistory(int scaleID, double value) {
@@ -183,18 +192,26 @@ void closeContainer() {
   xTaskCreate(motorOperationCheckTask, "MotorOperation Open Check", 4096, NULL, 1, &motorOperationCheckHandle);
 }
 
-MachineStatus getUpdatedStatus() {
-  MachineStatus status = *previousStatus;
-  status.ContainerLoad = machineController.getContainerLoad();
-  status.PlateLoad = machineController.getPlateLoad();
+MachineStatus* getUpdatedStatus() {
+  MachineStatus* status = new MachineStatus();
+  *status = *previousStatus;
+  status->ContainerLoad = machineController.getContainerLoad();
+  status->PlateLoad = machineController.getPlateLoad();
   return status;
 }
 
 SignificantWeightChange weightDifferenceSignificant() {
-  const double time_D = currentTimestamp - previousTimestamp;
+  const double time_D = (double)(currentTimestamp - previousTimestamp) / 1000;
   const double container_D = (currentStatus->ContainerLoad - previousStatus->ContainerLoad) / time_D;
   const double plate_D = (currentStatus->PlateLoad - previousStatus->PlateLoad) / time_D;
   SignificantWeightChange significantChange = None;
+  /*
+  Serial.print("Time_D: ");
+  Serial.print(time_D);
+  Serial.print(" Container_D: ");
+  Serial.print(container_D);
+  Serial.print(" plate_D: ");
+  Serial.println(plate_D);*/
 
   if (abs(container_D) > WEIGHT_D_THRESHOLD && abs(plate_D) > WEIGHT_D_THRESHOLD) {
     significantChange = Both;
@@ -203,7 +220,7 @@ SignificantWeightChange weightDifferenceSignificant() {
   } else if (abs(plate_D) > WEIGHT_D_THRESHOLD) {
     significantChange = OnlyPlate;
   }
-
+  
   return significantChange;
 }
 
@@ -215,7 +232,7 @@ void updateLoopFrequency(SignificantWeightChange significantChange) {
     }
   } else if (noStatusChangeTimestamp == 0) {
     noStatusChangeTimestamp = currentTimestamp;
-  } else if (currentTimestamp - noStatusChangeTimestamp > COOLDOWN_TIME) {
+  } else if (currentTimestamp - noStatusChangeTimestamp > COOLDOWN_TIME * 1000) {
     CURRENT_LOOP_FREQ = LOOP_FREQ_NORMAL;
   }
 }
@@ -270,13 +287,21 @@ void handleCurrentData(SignificantWeightChange significantChange) {
   //save and clear history buffers if possible/necessary
   if (CURRENT_LOOP_FREQ == LOOP_FREQ_NORMAL) {
     if (!containerScaleHistoryBuffer.empty()) {
+      //log
+      containerScaleHistoryBuffer.clear();
     }
     if (!plateScaleHistoryBuffer.empty()) {
+      //log
+      plateScaleHistoryBuffer.clear();
     }
   } else {
     if (containerScaleHistoryBuffer.size() >= MAX_HISTORY_BUFFER) {
+      //log
+      containerScaleHistoryBuffer.clear();
     }
     if (plateScaleHistoryBuffer.size() >= MAX_HISTORY_BUFFER) {
+      //log
+      plateScaleHistoryBuffer.clear();
     }
   }
 }
@@ -301,20 +326,20 @@ bool feedPending() {
   if (selectedSchedule == nullptr || !selectedSchedule->Active) {
     return false;
   }
-
+  
   bool pending = false;
 
   if (selectedSchedule->Mode == FixedDaytime) {
     std::vector<long> dayTimesSmallerNow;
     std::copy_if(selectedSchedule->Daytimes.begin(), selectedSchedule->Daytimes.end(), std::back_inserter(dayTimesSmallerNow), [](long n) {
-      return n <= currentTimestamp;
+      return n <= currentTimestamp / 1000;
     });
     auto max_it = std::max_element(dayTimesSmallerNow.begin(), dayTimesSmallerNow.end());
     pending = max_it == dayTimesSmallerNow.end() ? false : *max_it > lastFedTimestamp;
   } else if (selectedSchedule->Mode == MaxTimes) {
     pending = currentStatus->PlateLoad <= PLATE_EMPTY_THRESHOLD && numTimesFedToday < selectedSchedule->MaxTimes;
   }
-
+  
   return pending;
 }
 
@@ -322,6 +347,6 @@ bool dayChanged() {
   return getDay(currentTimestamp) > getDay(previousTimestamp);
 }
 
-long getDay(long timestamp) {
-  return timestamp / 86400L;
+long getDay(long timestampMillis) {
+  return timestampMillis / 86400000L;
 }

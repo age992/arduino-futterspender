@@ -12,6 +12,7 @@ export const environment = {
     { provide: ScheduleService, useClass: ScheduleMockService },
     { provide: SettingsService, useClass: SettingsMockService },
   ],
-  apiUrl: 'http://futterspender.local/api',
+  apiUrl: 'http://tigerbox.local/api',
+  wsUrl: 'ws://192.168.137.48/ws',
   //apiUrl: 'http://192.168.137.206/api',
 };
