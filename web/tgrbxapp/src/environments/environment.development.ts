@@ -13,6 +13,6 @@ export const environment = {
     { provide: SettingsService, useClass: SettingsMockService },
   ],
   apiUrl: 'http://tigerbox.local/api',
-  wsUrl: 'ws://192.168.137.48/ws',
+  wsUrl: 'ws://tigerbox.local/ws',
   //apiUrl: 'http://192.168.137.206/api',
 };
