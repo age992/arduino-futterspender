@@ -9,10 +9,10 @@ export const environment = {
   production: false,
   providers: [
     // { provide: StatusService, useClass: StatusMockService },
-    { provide: ScheduleService, useClass: ScheduleMockService },
+    //{ provide: ScheduleService, useClass: ScheduleMockService },
     { provide: SettingsService, useClass: SettingsMockService },
   ],
-  apiUrl: 'http://tigerbox.local/api',
-  wsUrl: 'ws://tigerbox.local/ws',
-  //apiUrl: 'http://192.168.137.206/api',
+  apiUrl: 'http://192.168.137.237/api',
+  //wsUrl: 'ws://tigerbox.local/ws',
+  wsUrl: 'ws://192.168.137.237/ws',
 };

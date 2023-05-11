@@ -36,7 +36,7 @@ export class DashboardComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.statusService.MachineStatus.subscribe((m) => {
+    this.statusService.MachineStatus.subscribe((m: MachineStatus | null) => {
       this.MachineStatus = m;
     });
     this.statusService.Loading.subscribe((l) => {
@@ -52,7 +52,7 @@ export class DashboardComponent implements OnInit {
     );
 
     this.scheduleService.Schedules.subscribe((s) => {
-      if (!s) {
+      if (!s || s.length == 0) {
         return;
       }
 
@@ -85,15 +85,16 @@ export class DashboardComponent implements OnInit {
   }
 
   toggleScheduleActive = (active: boolean) => {
-    const toggledSchedule: Schedule = {
+    /*const toggledSchedule: Schedule = {
       ...this.currentSchedule!,
       Active: active,
-    };
+    };*/
     this.UpdatingActivity = true;
-    this.scheduleService.upsertSchedule(toggledSchedule).subscribe((s) => {
-      this.currentSchedule = toggledSchedule;
-      this.UpdatingActivity = false;
-    });
+    this.scheduleService
+      .toggleScheduleActive(this.currentSchedule!, active)
+      .subscribe((s) => {
+        this.UpdatingActivity = false;
+      });
   };
 
   protected get containerLoadPercentage() {

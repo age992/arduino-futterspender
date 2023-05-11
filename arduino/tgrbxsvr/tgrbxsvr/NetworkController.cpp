@@ -12,6 +12,7 @@
 #include <ESPmDNS.h>
 #include <ArduinoJson.h>
 #include <SD.h>
+#include "JsonHelper.h"
 
 const String frontendRootPath = "/frontend/";
 
@@ -27,17 +28,28 @@ TaskHandle_t clearClientsTaskHandle;
 
 void clearClientsTask(void *pvParameters) {
   while (true) {
+    //Serial.println("Cleanup clients");
     vTaskDelay(pdMS_TO_TICKS(CLEAN_CLIENTS_INTERVAL * 1000));
     ws.cleanupClients();
   }
 }
 
-void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
-  if (type == WS_EVT_CONNECT) {
-    client->text("Hello from ESP32 Server");
-    Serial.println("Websocket client connection received");
-  } else if (type == WS_EVT_DISCONNECT) {
-    Serial.println("Client disconnected");
+void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
+               void *arg, uint8_t *data, size_t len) {
+  switch (type) {
+    case WS_EVT_CONNECT:
+      Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
+      break;
+    case WS_EVT_DISCONNECT:
+      Serial.printf("WebSocket client #%u disconnected\n", client->id());
+      break;
+    case WS_EVT_DATA:
+      Serial.println("Data ws received");
+      //Serial.printf(arg, data, len);
+      break;
+    case WS_EVT_PONG:
+    case WS_EVT_ERROR:
+      break;
   }
 }
 
@@ -46,7 +58,7 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
 //-- Rest API handlers --//
 
 void handleApiScheduleActivate(AsyncWebServerRequest *request) {
-  Serial.println("Handle activate schedule request");
+  //Serial.println("Handle activate schedule request");
 
   if (!request->hasParam("id") || !request->hasParam("active")) {
     request->send(400);
@@ -59,7 +71,7 @@ void handleApiScheduleActivate(AsyncWebServerRequest *request) {
     const int id = std::stoi(pId->value().c_str());
     const bool active = pActive->value().equals("true");
 
-    dataAccess.setActiveSchedule(id, true);
+    dataAccess.setActiveSchedule(id, active);
 
     if (selectedSchedule != nullptr) {
       if (selectedSchedule->ID != id) {
@@ -71,6 +83,7 @@ void handleApiScheduleActivate(AsyncWebServerRequest *request) {
     } else {
       selectedSchedule = dataAccess.getSelectedSchedule();
     }
+    request->send(200);
   } catch (...) {
     request->send(400);
   }
@@ -92,8 +105,10 @@ void handleApiScheduleGet(AsyncWebServerRequest *request) {
       request->send(400);
     }
   } else {
-    std::vector<Schedule> schedules = dataAccess.getAllSchedules();
-    //return serialized response
+    std::vector<Schedule> schedules;
+    dataAccess.getAllSchedules(schedules);
+    String response = serializeSchedules(schedules);
+    request->send(200, "application/json", response);
   }
 }
 
@@ -119,21 +134,35 @@ void handleApiScheduleDelete(AsyncWebServerRequest *request) {
 
 void handleApiSchedule(AsyncWebServerRequest *request, uint8_t *data) {
   WebRequestMethodComposite method = request->method();
-  
+
   switch (method) {
     case HTTP_POST:
       {
         Serial.print("POST ");
-        break;
+        Schedule *schedule = deserializeSchedule((char *)data);
+        const int id = dataAccess.insertSchedule(schedule);
+        if (id > 0) {
+          request->send(200, "application/json", std::to_string(id).c_str());
+        }else{
+          request->send(500);
+        }
+        return;
       }
     case HTTP_PUT:
       {
         Serial.print("PUT ");
-        break;
+        Schedule* schedule = deserializeSchedule((char *)data);
+        if (dataAccess.updateSchedule(schedule)) {
+          request->send(200);
+        }else{
+          request->send(500);
+        }
+        return;
       }
   }
   Serial.println("Schedule data: ");
-  Serial.println(reinterpret_cast<char*>(data));
+  Serial.println(reinterpret_cast<char *>(data));
+  request->send(200);
   request->send(400);
 }
 
@@ -160,9 +189,54 @@ void handleApiContainer(AsyncWebServerRequest *request) {
   request->send(200);
 }
 
+void handleApiScaleTare() {
+  Serial.print("Handle Api scale tare ");
+  /*String param = server.arg("scale");
+
+  if (param == "A") {
+    Serial.println("of scale A");
+    //machineController.
+    scale_A.tare(LOADCELL_TIMES);
+    systemSettings.ContainerOffset = scale_A.get_offset();
+    saveSystemSettings();
+    server.send(200);
+  } else if (param == "B") {
+    Serial.println("of scale B");
+    scale_B.tare(LOADCELL_TIMES);
+    systemSettings.PlateOffset = scale_B.get_offset();
+    saveSystemSettings();
+    server.send(200);
+  } else {
+    Serial.println("failed");
+    server.send(400);
+  }*/
+}
+
+void handleApiScaleCalibration() {
+  /*Serial.print("Hanlde Api scale calibration ");
+  String param = server.arg("scale");
+
+  if (param == "A") {
+    Serial.println("of scale A");
+    scale_A.calibrate_scale(systemSettings.CalibrationWeight, 5);
+    systemSettings.ContainerScale = scale_A.get_scale();
+    saveSystemSettings();
+    server.send(200);
+  } else if (param == "B") {
+    Serial.println("of scale B");
+    scale_B.calibrate_scale(systemSettings.CalibrationWeight, 5);
+    systemSettings.PlateScale = scale_B.get_scale();
+    saveSystemSettings();
+    server.send(200);
+  } else {
+    Serial.println("failed");
+    server.send(400);
+  }*/
+}
+
 //---//
 
-bool NetworkController::initNetworkConnection(Config* config) {
+bool NetworkController::initNetworkConnection(Config *config) {
   Serial.print("Connecting to WiFi...");
   Serial.print(config->ssid);
   Serial.print(" ");
@@ -188,7 +262,7 @@ bool NetworkController::initNetworkConnection(Config* config) {
 
 bool NetworkController::initNTP() {
   ntpClient.begin();
-  while(!ntpClient.update()){
+  while (!ntpClient.update()) {
     Serial.println("Couldn't fetch time via NTP...");
     delay(4000);
   }
@@ -259,7 +333,7 @@ bool NetworkController::initWebserver() {
 
   server.begin();
   Serial.println("Web Server started");
-  xTaskCreate(clearClientsTask, "ClearClientsTask", 4096, NULL, 1, &clearClientsTaskHandle);
+  //xTaskCreatePinnedToCore(clearClientsTask, "ClearClientsTask", 4096, NULL, 1, &clearClientsTaskHandle, 1); //@TODO: Why causes this AsyncTCP timeout???
   return true;
 }
 
@@ -268,5 +342,7 @@ bool NetworkController::hasWebClients() {
 }
 
 void NetworkController::broadcast(const char *serializedMessage) {
-  ws.textAll(serializedMessage);
+  if (ws.availableForWriteAll()) {
+    ws.textAll(serializedMessage);
+  }
 }

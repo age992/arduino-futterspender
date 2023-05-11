@@ -3,8 +3,10 @@
 
 #include "Models.h"
 #include "DataAccess.h"
+#include "MachineController.h"
 
 extern DataAccess dataAccess;
+extern MachineController machineController;
 extern Schedule* selectedSchedule;
 extern UserSettings* userSettings;
 

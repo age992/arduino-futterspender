@@ -8,6 +8,7 @@ import { getTimestamp, timePickerToUnix } from '../../lib/DateConverter';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../common/confirmation-dialog/confirmation-dialog.component';
 import { MatSnackBar, MatSnackBarRef } from '@angular/material/snack-bar';
+import { HttpResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-schedules',
@@ -52,7 +53,7 @@ export class SchedulesComponent implements OnInit {
       this.onScheduleSelectionChanged
     );
 
-    this.scheduleService.Schedules.subscribe((s) => {
+    this.scheduleService.Schedules.subscribe((s: Schedule[] | null) => {
       if (!s) {
         return;
       }
@@ -80,32 +81,13 @@ export class SchedulesComponent implements OnInit {
     if (this.toggledScheduleID) {
       return;
     }
-    const updateSchedule = structuredClone(schedule);
-    this.toggledScheduleID = updateSchedule.ID;
-    updateSchedule.Active = active;
-    updateSchedule.Selected = true;
-    const lastSelected = this.schedules.find((s) => s.Selected);
-
-    if (lastSelected && lastSelected.ID != updateSchedule.ID) {
-      lastSelected.Selected = false;
-      lastSelected.Active = false;
-      this.scheduleService.upsertSchedule(lastSelected).subscribe((r) => {
-        if (r.status == 200) {
-          this.scheduleService.upsertSchedule(updateSchedule).subscribe((r) => {
-            if (r.status == 200) {
-              this.toggledScheduleID = undefined;
-              this.schedulesListControl.setValue([updateSchedule]);
-            }
-          });
-        } else {
-          this.toggledScheduleID = undefined;
-        }
+    //const updateSchedule = structuredClone(schedule);
+    this.toggledScheduleID = schedule.ID;
+    this.scheduleService
+      .toggleScheduleActive(schedule, active)
+      .subscribe((r: HttpResponse<unknown>) => {
+        this.toggledScheduleID = undefined;
       });
-    } else {
-      this.scheduleService
-        .upsertSchedule(updateSchedule)
-        .subscribe((r) => (this.toggledScheduleID = undefined));
-    }
   }
 
   onMaxTimesChanged = (newValue: number) => {
@@ -157,7 +139,7 @@ export class SchedulesComponent implements OnInit {
     this.saveOrDeletingSchedule = true;
     this.scheduleService
       .deleteSchedule(this.selectedSchedule)
-      .subscribe((r) => {
+      .subscribe((r: HttpResponse<unknown>) => {
         if (r.status == 200) {
           this.openSnackBar('Gelöscht!');
           this.schedulesListControl.setValue([]);
@@ -182,18 +164,27 @@ export class SchedulesComponent implements OnInit {
       return;
     }
 
+    const callback = (r: HttpResponse<any>) => {
+      if (r.status == 200) {
+        this.schedulesListControl.setValue([]);
+        this.openSnackBar('Gespeichert!');
+      } else {
+        this.openSnackBar('Fehler beim Speichern der Änderungen!');
+      }
+      this.saveOrDeletingSchedule = false;
+    };
+
     this.saveOrDeletingSchedule = true;
-    this.scheduleService
-      .upsertSchedule(this.selectedSchedule)
-      .subscribe((r) => {
-        if (r.status == 200) {
-          this.schedulesListControl.setValue([]);
-          this.openSnackBar('Gespeichert!');
-        } else {
-          this.openSnackBar('Fehler beim Speichern der Änderungen!');
-        }
-        this.saveOrDeletingSchedule = false;
-      });
+
+    if (!!this.selectedSchedule.ID) {
+      this.scheduleService
+        .updateSchedule(this.selectedSchedule)
+        .subscribe(callback);
+    } else {
+      this.scheduleService
+        .addSchedule(this.selectedSchedule)
+        .subscribe(callback);
+    }
   };
 
   validateSchedule = (schedule: Schedule) => {

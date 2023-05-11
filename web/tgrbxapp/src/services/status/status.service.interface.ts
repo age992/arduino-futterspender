@@ -7,8 +7,6 @@ export interface IStatusService {
   Connected: Subject<boolean>;
   Loading: Subject<boolean>;
   SetupMode: Subject<boolean>;
-  fetchMachineStatus(): void;
-  setFetching(interval: FetchInterval): void;
   startFeed(): void;
   stopFeed(): void;
 }

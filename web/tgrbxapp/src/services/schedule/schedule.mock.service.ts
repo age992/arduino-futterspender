@@ -17,6 +17,12 @@ export class ScheduleMockService implements IScheduleService {
   constructor() {
     this.fetchSchedules();
   }
+  addSchedule(schedule: Schedule): Observable<HttpResponse<number>> {
+    throw new Error('Method not implemented.');
+  }
+  updateSchedule(schedule: Schedule): Observable<HttpResponse<unknown>> {
+    throw new Error('Method not implemented.');
+  }
 
   private notify = () => {
     this.Schedules.next(this.schedulesInternal);

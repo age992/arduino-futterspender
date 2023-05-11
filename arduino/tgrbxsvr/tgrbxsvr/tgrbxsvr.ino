@@ -49,25 +49,25 @@ const int MAX_HISTORY_BUFFER = 100;
 std::vector<ScaleData> containerScaleHistoryBuffer;
 std::vector<ScaleData> plateScaleHistoryBuffer;
 
-const int MOTOR_CHECK_WAIT = 2; //seconds
+const int MOTOR_CHECK_WAIT = 2;  //seconds
 TaskHandle_t motorOperationCheckHandle;
 MotorCheckParams motorCheckParams;
 
-void motorOperationCheckTask(void *pvParameters) {
+void motorOperationCheckTask(void* pvParameters) {
   vTaskDelay(pdMS_TO_TICKS(MOTOR_CHECK_WAIT * 1000));
 
   const double container_D = currentStatus->ContainerLoad - motorCheckParams.ContainerLoad;
 
-  if(motorCheckParams.Open){
-    if(container_D / (double) MOTOR_CHECK_WAIT > -1 * WEIGHT_D_THRESHOLD){
+  if (motorCheckParams.Open) {
+    if (container_D / (double)MOTOR_CHECK_WAIT > -1 * WEIGHT_D_THRESHOLD) {
       currentStatus->MotorOperation = false;
-    }else{
+    } else {
       currentStatus->MotorOperation = true;
     }
-  }else{
-    if(container_D <= -1 * WEIGHT_D_THRESHOLD){
+  } else {
+    if (container_D <= -1 * WEIGHT_D_THRESHOLD) {
       currentStatus->MotorOperation = false;
-    }else{
+    } else {
       currentStatus->MotorOperation = true;
     }
   }
@@ -90,6 +90,13 @@ void setup() {
   today = getDay(currentTimestamp);
 
   selectedSchedule = dataAccess.getSelectedSchedule();
+  Serial.print("Selected Schedule: ");
+  if (selectedSchedule != nullptr) {
+    Serial.println(selectedSchedule->ID);
+    Serial.println(selectedSchedule->Name);
+  } else {
+    Serial.println(" nullptr");
+  }
   //const long actualLastFedTimestamp = dataAccess.getLastFedTimestampBefore(currentTimestamp);
   lastFedTimestamp = currentTimestamp;
   //log missed feeds betwen actualLastFedTimestamp and lastFedTimestamp
@@ -111,7 +118,27 @@ void setup() {
   previousStatus = status;
 }
 
+void printRam(){
+  size_t totalHeap = ESP.getHeapSize();
+
+  // Get the free heap size
+  size_t freeHeap = ESP.getFreeHeap();
+
+  // Calculate the used heap size
+  size_t usedHeap = totalHeap - freeHeap;
+
+  // Print RAM usage information
+  Serial.print("Total Heap: ");
+  Serial.print(totalHeap);
+  Serial.print(" bytes\tFree Heap: ");
+  Serial.print(freeHeap);
+  Serial.print(" bytes\tUsed Heap: ");
+  Serial.print(usedHeap);
+  Serial.println(" bytes");
+}
+
 void loop() {
+  //printRam();
   //Serial.print("loop ");
   //Serial.println(millis());
   currentTimestamp = networkController.getCurrentTime();
@@ -172,7 +199,7 @@ void openContainer() {
   machineController.openContainer();
   currentStatus->Open = true;
 
-  if(eTaskGetState(motorOperationCheckHandle) != eDeleted){
+  if (eTaskGetState(motorOperationCheckHandle) != eDeleted) {
     vTaskDelete(motorOperationCheckHandle);
   }
   motorCheckParams.ContainerLoad = currentStatus->ContainerLoad;
@@ -184,7 +211,7 @@ void closeContainer() {
   machineController.closeContainer();
   currentStatus->Open = false;
 
-  if(eTaskGetState(motorOperationCheckHandle) != eDeleted){
+  if (eTaskGetState(motorOperationCheckHandle) != eDeleted) {
     vTaskDelete(motorOperationCheckHandle);
   }
   motorCheckParams.ContainerLoad = currentStatus->ContainerLoad;
@@ -220,7 +247,7 @@ SignificantWeightChange weightDifferenceSignificant() {
   } else if (abs(plate_D) > WEIGHT_D_THRESHOLD) {
     significantChange = OnlyPlate;
   }
-  
+
   return significantChange;
 }
 
@@ -241,7 +268,8 @@ void handleCurrentData(SignificantWeightChange significantChange) {
   const bool clientsAvailable = networkController.hasWebClients();
 
   ArduinoJson::DynamicJsonDocument doc(1024);
-  doc["status"] = serializeStatus(*currentStatus);
+  ArduinoJson::JsonObject status = doc.createNestedObject("status");
+  setJsonStatus(currentStatus, status);
   ArduinoJson::JsonObject history = doc.createNestedObject("history");
   ArduinoJson::JsonArray schedules = history.createNestedArray("schedules");
   ArduinoJson::JsonArray events = history.createNestedArray("events");
@@ -252,28 +280,29 @@ void handleCurrentData(SignificantWeightChange significantChange) {
       {
         ScaleData data = createScaleDataHistory(0, currentStatus->ContainerLoad);
         containerScaleHistoryBuffer.push_back(data);
-        String serializedData = serializeScaleData(data);
-        scaleData.add(serializedData);
+        ArduinoJson::JsonObject dataObject = scaleData.createNestedObject();
+        setJsonScaleHistory(&data, dataObject);
         break;
       }
     case OnlyPlate:
       {
         ScaleData data = createScaleDataHistory(1, currentStatus->PlateLoad);
         plateScaleHistoryBuffer.push_back(data);
-        String serializedData = serializeScaleData(data);
-        scaleData.add(serializedData);
+        ArduinoJson::JsonObject dataObject = scaleData.createNestedObject();
+        setJsonScaleHistory(&data, dataObject);
         break;
       }
     case Both:
       {
         ScaleData data_A = createScaleDataHistory(0, currentStatus->ContainerLoad);
         containerScaleHistoryBuffer.push_back(data_A);
-        String serializedData_A = serializeScaleData(data_A);
-        scaleData.add(serializedData_A);
+        ArduinoJson::JsonObject dataObject_A = scaleData.createNestedObject();
+        setJsonScaleHistory(&data_A, dataObject_A);
+        ;
         ScaleData data_B = createScaleDataHistory(1, currentStatus->PlateLoad);
         plateScaleHistoryBuffer.push_back(data_B);
-        String serializedData_B = serializeScaleData(data_B);
-        scaleData.add(serializedData_B);
+        ArduinoJson::JsonObject dataObject_B = scaleData.createNestedObject();
+        setJsonScaleHistory(&data_B, dataObject_B);
         break;
       }
   }
@@ -282,7 +311,10 @@ void handleCurrentData(SignificantWeightChange significantChange) {
     String serialized;
     serializeJson(doc, serialized);
     networkController.broadcast(serialized.c_str());
+    //Serial.print("Status doc overflowed: ");
+    //Serial.println(doc.overflowed());
   }
+  doc.clear();
 
   //save and clear history buffers if possible/necessary
   if (CURRENT_LOOP_FREQ == LOOP_FREQ_NORMAL) {
@@ -326,7 +358,7 @@ bool feedPending() {
   if (selectedSchedule == nullptr || !selectedSchedule->Active) {
     return false;
   }
-  
+
   bool pending = false;
 
   if (selectedSchedule->Mode == FixedDaytime) {
@@ -339,7 +371,7 @@ bool feedPending() {
   } else if (selectedSchedule->Mode == MaxTimes) {
     pending = currentStatus->PlateLoad <= PLATE_EMPTY_THRESHOLD && numTimesFedToday < selectedSchedule->MaxTimes;
   }
-  
+
   return pending;
 }
 

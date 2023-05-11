@@ -4,6 +4,9 @@
 #include "Models.h"
 #include <vector>
 
+
+extern void printRam();
+
 class DataAccess {
 
 public:
@@ -27,10 +30,10 @@ public:
   Schedule *getSelectedSchedule();
   bool setSelectSchedule(int scheduleID, bool selected);
   bool setActiveSchedule(int scheduleID, bool active);
-  std::vector<Schedule> getAllSchedules();
+  void getAllSchedules(std::vector<Schedule>& schedules);
   Schedule* getScheduleByID(int id);
-  int insertSchedule(Schedule schedule);
-  bool updateSchedule(Schedule schedule);
+  int insertSchedule(Schedule* schedule);
+  bool updateSchedule(Schedule* schedule);
   bool deleteSchedule(int scheduleID);
   
 };

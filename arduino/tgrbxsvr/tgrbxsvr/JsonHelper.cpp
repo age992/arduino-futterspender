@@ -1,5 +1,4 @@
 #include "JsonHelper.h"
-#include <ArduinoJson.h>
 
 String serializeStatus(MachineStatus data) {
   String serialized;
@@ -13,6 +12,14 @@ String serializeStatus(MachineStatus data) {
   return serialized;
 }
 
+void setJsonStatus(MachineStatus* data, ArduinoJson::JsonObject statusObject) {
+  statusObject["ContainerLoad"] = data->ContainerLoad;
+  statusObject["PlateLoad"] = data->PlateLoad;
+  statusObject["Open"] = data->Open;
+  statusObject["MotorOperation"] = data->MotorOperation;
+  statusObject["SDCardConnection"] = data->SDCardConnection;
+}
+
 String serializeScaleData(ScaleData data) {
   String serialized;
   ArduinoJson::DynamicJsonDocument doc(512);
@@ -24,9 +31,16 @@ String serializeScaleData(ScaleData data) {
   return serialized;
 }
 
+void setJsonScaleHistory(ScaleData* data, ArduinoJson::JsonObject dataObject) {
+  dataObject["ID"] = data->ScaleID;
+  dataObject["CreatedOn"] = data->CreatedOn;
+  dataObject["ScaleID"] = data->ScaleID;
+  dataObject["Value"] = data->Value;
+}
+
 String serializeNotification(Notification data) {
   String serialized;
-  ArduinoJson::DynamicJsonDocument doc(512);
+  ArduinoJson::StaticJsonDocument<512> doc;
   doc["Active"] = data.Active;
   doc["Email"] = data.Email;
   doc["Phone"] = data.Phone;
@@ -34,20 +48,67 @@ String serializeNotification(Notification data) {
   return serialized;
 };
 
-String serializeDaytimes(std::vector<long> data) {
-  String serialized;
-  ArduinoJson::DynamicJsonDocument doc(512);
-
+void setJsonDaytimes(ArduinoJson::JsonArray& jsonArray, const std::vector<long>& data){
   for (long datetime : data) {
-    doc.add(datetime);
+    jsonArray.add(datetime);
+  }
+}
+
+String serializeDaytimes(const std::vector<long>& data) {
+  String serialized;
+  ArduinoJson::StaticJsonDocument<512> doc;
+  ArduinoJson::JsonArray jsonArray = doc.to<JsonArray>();
+  setJsonDaytimes(jsonArray, data);
+  serializeJson(jsonArray, serialized);
+  return serialized;
+};
+
+String serializeSchedules(const std::vector<Schedule>& data) {
+  String serialized;
+  ArduinoJson::StaticJsonDocument<512> doc;
+  ArduinoJson::JsonArray list = doc.createNestedArray("schedules");
+
+  for (size_t i = 0; i < data.size(); i++) {
+    Schedule schedule = data.at(i);
+    ArduinoJson::JsonObject scheduleObject = list.createNestedObject();
+    scheduleObject["ID"] = schedule.ID;
+    scheduleObject["CreatedOn"] = schedule.CreatedOn;
+    scheduleObject["Name"] = schedule.Name;
+    scheduleObject["Mode"] = schedule.Mode;
+    scheduleObject["Selected"] = schedule.Selected;
+    scheduleObject["Active"] = schedule.Active;
+    ArduinoJson::JsonArray daytimesArray = scheduleObject.createNestedArray("Daytimes");
+    setJsonDaytimes(daytimesArray, schedule.Daytimes);
+    scheduleObject["MaxTimes"] = schedule.MaxTimes;
+    scheduleObject["MaxTimesStartTime"] = schedule.MaxTimesStartTime;
+    scheduleObject["OnlyWhenEmpty"] = schedule.OnlyWhenEmpty;
   }
 
   serializeJson(doc, serialized);
   return serialized;
 };
 
-Schedule deserializeSchedule(String data){
-  
+Schedule* deserializeSchedule(char* data){
+  ArduinoJson::StaticJsonDocument<512> doc;
+  DeserializationError error = deserializeJson(doc, data);
+
+  if (error) {
+    Serial.println(F("Failed to deserialize schedule"));
+    return nullptr;
+  };
+
+  Schedule* schedule = new Schedule();
+  schedule->ID = doc["ID"].as<int>();
+  schedule->CreatedOn = doc["CreatedOn"].as<long>();
+  schedule->Name = doc["Name"].as<String>();
+  schedule->Mode = doc["Mode"].as<int>();
+  schedule->Selected = doc["Selected"].as<bool>();
+  schedule->Active = doc["Active"].as<bool>();
+  schedule->Daytimes = deserializeDaytimes(doc["Daytimes"].as<String>());
+  schedule->MaxTimes = doc["MaxTimes"].as<int>();
+  schedule->MaxTimesStartTime = doc["MaxTimesStartTime"].as<long>();
+  schedule->OnlyWhenEmpty = doc["OnlyWhenEmpty"].as<bool>();
+  return schedule;
 };
 
 std::vector<long> deserializeDaytimes(String data) {
