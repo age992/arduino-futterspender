@@ -299,8 +299,7 @@ bool DataAccess::setActiveSchedule(int scheduleID, bool active) {
 
   sqlite3_stmt *stmt;
   const char *sql = "UPDATE Schedules "
-                    "SET Selected = 1, "
-                    "Active = ? "
+                    "SET Active = ? "
                     "WHERE ID = ?";
 
   int rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
@@ -339,8 +338,6 @@ void DataAccess::getAllSchedules(std::vector<Schedule> &schedules) {
   } while (rc == SQLITE_ROW);
 
   if (!(rc == SQLITE_OK || rc == SQLITE_DONE)) {
-    Serial.print("RC: ");
-    Serial.println(rc);
     Serial.printf("ERROR executing stmt: %s\n", sqlite3_errmsg(dbUser));
   }
 
@@ -426,6 +423,8 @@ bool DataAccess::updateSchedule(Schedule* schedule) {
   sqlite3_bind_int(stmt, 4, schedule->Active ? 1 : 0);
   sqlite3_bind_int(stmt, 5, schedule->Selected ? 1 : 0);
   const char *dayTimesString = serializeDaytimes(schedule->Daytimes).c_str();
+  Serial.print("asdf ");
+  Serial.println(dayTimesString);
   sqlite3_bind_text(stmt, 6, dayTimesString, strlen(dayTimesString), SQLITE_TRANSIENT);
   sqlite3_bind_int(stmt, 7, schedule->MaxTimes);
   sqlite3_bind_int64(stmt, 8, schedule->MaxTimesStartTime);

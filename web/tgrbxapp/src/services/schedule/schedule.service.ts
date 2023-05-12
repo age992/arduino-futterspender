@@ -1,7 +1,7 @@
 import { Injectable, OnInit } from '@angular/core';
 import { IScheduleService } from './schedule.service.interface';
 import { Schedule } from 'src/models/Schedule';
-import { BehaviorSubject, Observable, ReplaySubject } from 'rxjs';
+import { BehaviorSubject, Observable, ReplaySubject, shareReplay } from 'rxjs';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 
@@ -27,15 +27,17 @@ export class ScheduleService implements IScheduleService {
     active: boolean
   ): Observable<HttpResponse<any>> {
     console.log('Toggle schedule ', schedule.ID, active);
-    const obs = this.http.get<HttpResponse<any>>(
-      environment.apiUrl +
-        '/schedule/activate?id=' +
-        schedule.ID +
-        '&active=' +
-        (active ? 'true' : 'false'),
-      { observe: 'response' }
-    );
-    obs.subscribe((response: HttpResponse<any>) => {
+    const obs = this.http
+      .get(
+        environment.apiUrl +
+          '/schedule/activate?id=' +
+          schedule.ID +
+          '&active=' +
+          (active ? 'true' : 'false'),
+        { observe: 'response' }
+      )
+      .pipe(shareReplay());
+    obs.subscribe((response) => {
       if (response.status == 200) {
         const lastSelected = this.schedulesInternal.find((s) => s.Selected);
         if (lastSelected && lastSelected.ID != schedule.ID) {
@@ -53,11 +55,13 @@ export class ScheduleService implements IScheduleService {
 
   addSchedule(schedule: Schedule): Observable<HttpResponse<number>> {
     console.log('Add schedule...');
-    const obs = this.http.post<HttpResponse<number>>(
-      environment.apiUrl + '/schedule',
-      schedule
-    );
-    obs.subscribe((response: HttpResponse<number>) => {
+    schedule.CreatedOn = new Date().getTime();
+    const obs = this.http
+      .post<number>(environment.apiUrl + '/schedule', schedule, {
+        observe: 'response',
+      })
+      .pipe(shareReplay());
+    obs.subscribe((response: HttpResponse<unknown>) => {
       schedule.ID = response.body as number;
       this.schedulesInternal.push(schedule);
       this.notify();
@@ -67,28 +71,30 @@ export class ScheduleService implements IScheduleService {
 
   updateSchedule(schedule: Schedule): Observable<HttpResponse<unknown>> {
     console.log('Update schedule...');
-    const obs = this.http.put<HttpResponse<unknown>>(
-      environment.apiUrl + '/schedule',
-      schedule,
-      { observe: 'response' }
-    );
-    obs.subscribe((response: HttpResponse<unknown>) => {
+    const obs = this.http
+      .put(environment.apiUrl + '/schedule', schedule, {
+        observe: 'response',
+      })
+      .pipe(shareReplay());
+    obs.subscribe((response) => {
       if (response.status == 200) {
-        let oldSchedule = this.schedulesInternal.filter(
+        let index = this.schedulesInternal.findIndex(
           (_) => _.ID == schedule.ID
-        )[0];
-        oldSchedule = schedule;
+        );
+        this.schedulesInternal[index] = schedule;
+        this.notify();
       }
-      this.notify();
     });
     return obs;
   }
 
   deleteSchedule(schedule: Schedule): Observable<HttpResponse<unknown>> {
-    const obs = this.http.delete<HttpResponse<any>>(
-      environment.apiUrl + '/schedule?' + schedule.ID
-    );
-    obs.subscribe((response: HttpResponse<any>) => {
+    const obs = this.http
+      .delete(environment.apiUrl + '/schedule?id=' + schedule.ID, {
+        observe: 'response',
+      })
+      .pipe(shareReplay());
+    obs.subscribe((response) => {
       if (response.status == 200) {
         let i = this.schedulesInternal.findIndex((s) => s.ID == schedule.ID);
         if (i != -1) {
@@ -108,8 +114,10 @@ export class ScheduleService implements IScheduleService {
       .get<ScheduleFetchResponse>(environment.apiUrl + '/schedule', {
         observe: 'response',
       })
+      .pipe(shareReplay())
       .subscribe((response) => {
         if (response.status == 200) {
+          console.log(response.body?.schedules);
           this.schedulesInternal = response.body?.schedules || [];
           this.notify();
         }

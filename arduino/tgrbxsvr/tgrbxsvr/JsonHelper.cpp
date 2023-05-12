@@ -48,18 +48,24 @@ String serializeNotification(Notification data) {
   return serialized;
 };
 
-void setJsonDaytimes(ArduinoJson::JsonArray& jsonArray, const std::vector<long>& data){
+void setJsonDaytimes(ArduinoJson::JsonArray& jsonArray, const std::vector<long>& data) {
   for (long datetime : data) {
     jsonArray.add(datetime);
   }
 }
 
 String serializeDaytimes(const std::vector<long>& data) {
+  Serial.println("Serialize daytimes");
   String serialized;
+  String f;
   ArduinoJson::StaticJsonDocument<512> doc;
   ArduinoJson::JsonArray jsonArray = doc.to<JsonArray>();
   setJsonDaytimes(jsonArray, data);
   serializeJson(jsonArray, serialized);
+  serializeJson(doc, f);
+  Serial.println(std::to_string(jsonArray.size()).c_str());
+  Serial.println(serialized);
+  Serial.println(f);
   return serialized;
 };
 
@@ -88,7 +94,7 @@ String serializeSchedules(const std::vector<Schedule>& data) {
   return serialized;
 };
 
-Schedule* deserializeSchedule(char* data){
+Schedule* deserializeSchedule(char* data) {
   ArduinoJson::StaticJsonDocument<512> doc;
   DeserializationError error = deserializeJson(doc, data);
 
@@ -112,21 +118,23 @@ Schedule* deserializeSchedule(char* data){
 };
 
 std::vector<long> deserializeDaytimes(String data) {
+  Serial.println("Deserialize daytimes");
   std::vector<long> daytimes;
   StaticJsonDocument<512> doc;
-  DeserializationError error = deserializeJson(doc, data.c_str());
+  DeserializationError error = deserializeJson(doc, data);
 
   if (error) {
     Serial.println(F("Failed to deserialize daytimes for schedule"));
+    Serial.println(error.c_str());
     return daytimes;
   };
 
   JsonArray jsonArray = doc.as<JsonArray>();
-
   for (JsonVariant v : jsonArray) {
     daytimes.push_back(v.as<long>());
   }
 
+  Serial.println(std::to_string(daytimes.size()).c_str());
   return daytimes;
 }
 

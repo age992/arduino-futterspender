@@ -253,6 +253,7 @@ export class SchedulesComponent implements OnInit {
       const b = this.selectedSchedule.Daytimes.slice(index + 1);
       this.selectedSchedule.Daytimes = a.concat(b);
     }
+    console.log('new daytimes ', this.selectedSchedule.Daytimes);
   };
 
   navBack() {

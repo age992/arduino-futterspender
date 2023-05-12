@@ -71,11 +71,13 @@ void handleApiScheduleActivate(AsyncWebServerRequest *request) {
     const int id = std::stoi(pId->value().c_str());
     const bool active = pActive->value().equals("true");
 
+    dataAccess.setSelectSchedule(id, true);
     dataAccess.setActiveSchedule(id, active);
 
     if (selectedSchedule != nullptr) {
       if (selectedSchedule->ID != id) {
         dataAccess.setSelectSchedule(selectedSchedule->ID, false);
+        dataAccess.setActiveSchedule(selectedSchedule->ID, false);
         selectedSchedule = dataAccess.getSelectedSchedule();
       } else {
         selectedSchedule->Active = active;
@@ -123,6 +125,9 @@ void handleApiScheduleDelete(AsyncWebServerRequest *request) {
       if (selectedSchedule != nullptr && selectedSchedule->ID == id) {
         selectedSchedule = nullptr;
       }
+      Serial.print("Deleted schedule (ID=");
+      Serial.print(std::to_string(id).c_str());
+      Serial.println(")");
       request->send(200);
     } else {
       request->send(404);
@@ -134,11 +139,11 @@ void handleApiScheduleDelete(AsyncWebServerRequest *request) {
 
 void handleApiSchedule(AsyncWebServerRequest *request, uint8_t *data) {
   WebRequestMethodComposite method = request->method();
-
+  Serial.print("Handle Api Schedule ");
   switch (method) {
     case HTTP_POST:
       {
-        Serial.print("POST ");
+        Serial.print("POST");
         Schedule *schedule = deserializeSchedule((char *)data);
         const int id = dataAccess.insertSchedule(schedule);
         if (id > 0) {
@@ -150,7 +155,7 @@ void handleApiSchedule(AsyncWebServerRequest *request, uint8_t *data) {
       }
     case HTTP_PUT:
       {
-        Serial.print("PUT ");
+        Serial.print("PUT");
         Schedule* schedule = deserializeSchedule((char *)data);
         if (dataAccess.updateSchedule(schedule)) {
           request->send(200);
@@ -160,9 +165,6 @@ void handleApiSchedule(AsyncWebServerRequest *request, uint8_t *data) {
         return;
       }
   }
-  Serial.println("Schedule data: ");
-  Serial.println(reinterpret_cast<char *>(data));
-  request->send(200);
   request->send(400);
 }
 
@@ -298,10 +300,11 @@ bool NetworkController::initWebserver() {
   server.on("/api/schedule", HTTP_DELETE, [](AsyncWebServerRequest *request) {
     handleApiScheduleDelete(request);
   });
-  server.onRequestBody([](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-    if (request->url() == "/api/schedule/activate") {
+  server.on("/api/schedule",  HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
       handleApiSchedule(request, data);
-    }
+  });
+  server.on("/api/schedule",  HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+      handleApiSchedule(request, data);
   });
 
   server.on("/api", [](AsyncWebServerRequest *request) {
@@ -319,7 +322,7 @@ bool NetworkController::initWebserver() {
   });
 
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
-  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
+  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type");
 
   /*
