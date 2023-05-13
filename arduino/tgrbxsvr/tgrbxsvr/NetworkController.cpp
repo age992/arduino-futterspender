@@ -149,7 +149,7 @@ void handleApiSchedule(AsyncWebServerRequest *request, uint8_t *data) {
   switch (method) {
     case HTTP_POST:
       {
-        Serial.print("POST");
+        Serial.println("POST");
         Schedule *schedule = deserializeSchedule((char *)data);
         const int id = dataAccess.insertSchedule(schedule);
         if (id > 0) {
@@ -161,7 +161,7 @@ void handleApiSchedule(AsyncWebServerRequest *request, uint8_t *data) {
       }
     case HTTP_PUT:
       {
-        Serial.print("PUT");
+        Serial.println("PUT");
         Schedule *schedule = deserializeSchedule((char *)data);
         if (dataAccess.updateSchedule(schedule)) {
           request->send(200);

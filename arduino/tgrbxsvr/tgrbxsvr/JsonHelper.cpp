@@ -61,7 +61,6 @@ String serializeDaytimes(const std::vector<long>& data) {
   ArduinoJson::JsonArray jsonArray = doc.to<JsonArray>();
   setJsonDaytimes(jsonArray, data);
   serializeJson(jsonArray, serialized);
-  Serial.println(serialized);
   return serialized;
 };
 

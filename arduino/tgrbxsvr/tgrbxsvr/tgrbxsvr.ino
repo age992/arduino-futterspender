@@ -49,6 +49,7 @@ std::vector<ScaleData> containerScaleHistoryBuffer;
 std::vector<ScaleData> plateScaleHistoryBuffer;
 
 const int MOTOR_CHECK_WAIT = 2;  //seconds
+bool motorCheckRunning = false;
 TaskHandle_t motorOperationCheckHandle;
 MotorCheckParams motorCheckParams;
 
@@ -70,6 +71,8 @@ void motorOperationCheckTask(void* pvParameters) {
       currentStatus->MotorOperation = true;
     }
   }
+
+  vTaskDelete(NULL);
 }
 
 void setSchedule(Schedule* newSchedule) {
@@ -153,13 +156,14 @@ void loop() {
   currentStatus = getUpdatedStatus();
 
   if (feedPending()) {
-    Serial.println("Feed pending!");
     if (currentStatus->ContainerLoad > CONTAINER_EMPTY_THRESHOLD) {
       if (!currentStatus->Open) {
+        Serial.println("Start feeding!");
         //start feeding
         currentFeedTargetWeight = min(userSettings->PlateFilling, currentStatus->PlateLoad + currentStatus->ContainerLoad) - SAFETY_WEIGHT_GAP;
         openContainer();
       } else if (currentStatus->PlateLoad >= currentFeedTargetWeight || currentStatus->ContainerLoad <= CONTAINER_EMPTY_THRESHOLD) {
+        Serial.println("Finished feeding");
         //finished feeding
         lastFedTimestamp = currentTimestamp;
         currentFeedTargetWeight = 0;
@@ -170,9 +174,12 @@ void loop() {
         closeContainer();
         //log history: eventtype = feed, currentTimestamp
       } else if (!currentStatus->MotorOperation) {
+        Serial.println("Abort feeding because Motor fail");
         //abort feeding
         lastFedTimestamp = currentTimestamp;
         currentFeedTargetWeight = 0;
+        Serial.print("Current Feed Targetweight: ");
+        Serial.println(currentFeedTargetWeight);
         closeContainer();
         //log history: eventtype = missedFeed, currentTimestamp
       }
@@ -204,27 +211,33 @@ ScaleData createScaleDataHistory(int scaleID, double value) {
 }
 
 void openContainer() {
+  Serial.println("Open Container!");
   machineController.openContainer();
   currentStatus->Open = true;
 
-  if (eTaskGetState(motorOperationCheckHandle) != eDeleted) {
+  if (motorOperationCheckHandle != nullptr && eTaskGetState(motorOperationCheckHandle) != eDeleted) {
+    Serial.println("Kill ContainerClose check");
     vTaskDelete(motorOperationCheckHandle);
   }
+
   motorCheckParams.ContainerLoad = currentStatus->ContainerLoad;
   motorCheckParams.Open = true;
-  xTaskCreate(motorOperationCheckTask, "MotorOperation Open Check", 4096, NULL, 1, &motorOperationCheckHandle);
+  xTaskCreatePinnedToCore(motorOperationCheckTask, "MotorOpenCheck", 2048, NULL, 1, &motorOperationCheckHandle, 1);
 }
 
 void closeContainer() {
+  Serial.println("Close Container!");
   machineController.closeContainer();
   currentStatus->Open = false;
 
-  if (eTaskGetState(motorOperationCheckHandle) != eDeleted) {
+  if (motorOperationCheckHandle != nullptr && eTaskGetState(motorOperationCheckHandle) != eDeleted) {
+    Serial.println("Kill ContainerOpen check");
     vTaskDelete(motorOperationCheckHandle);
   }
+
   motorCheckParams.ContainerLoad = currentStatus->ContainerLoad;
   motorCheckParams.Open = false;
-  xTaskCreate(motorOperationCheckTask, "MotorOperation Open Check", 4096, NULL, 1, &motorOperationCheckHandle);
+  xTaskCreatePinnedToCore(motorOperationCheckTask, "MotorCloseCheck", 2048, NULL, 1, &motorOperationCheckHandle, 1);
 }
 
 MachineStatus* getUpdatedStatus() {
@@ -363,7 +376,7 @@ void handleNotifications() {
 }
 
 bool feedPending() {
-  Serial.println("Feed pending?...");
+  //Serial.println("Feed pending?...");
   if (selectedSchedule == nullptr || !selectedSchedule->Active) {
     Serial.println("Nope");
     return false;
@@ -383,12 +396,12 @@ bool feedPending() {
         break;
       }
     }
-    Serial.print("CurrentTimestamp: ");
+    /*Serial.print("CurrentTimestamp: ");
     Serial.println(currentTimestamp);
     Serial.print("LatestFeedtimeSmallerNow: ");
     Serial.println(latestFeedtimeSmallerNow);
     Serial.print("LastFed: ");
-    Serial.println(lastFedTimestamp);
+    Serial.println(lastFedTimestamp);*/
     pending = latestFeedtimeSmallerNow != -1 && latestFeedtimeSmallerNow > lastFedTimestamp;
   } else if (selectedSchedule->Mode == MaxTimes) {
     pending = currentStatus->PlateLoad <= PLATE_EMPTY_THRESHOLD && numTimesFedToday < selectedSchedule->MaxTimes;
