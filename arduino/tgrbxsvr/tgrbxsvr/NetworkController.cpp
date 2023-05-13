@@ -264,7 +264,8 @@ bool NetworkController::initNetworkConnection(Config *config) {
   Serial.println("Start MDNS...");
   const char *domainName = config->localDomainName != nullptr ? config->localDomainName : "futterspender";
   if (MDNS.begin(domainName)) {
-    Serial.println("MDNS started!");
+    Serial.print("MDNS started! Domain Name: ");
+    Serial.println(domainName);
   } else {
     Serial.println("Couldn't start MDNS");
   }

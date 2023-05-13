@@ -11,12 +11,13 @@ import {
 } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
+import { WebSocketData } from 'src/models/WebSocketData';
 
 @Injectable({
   providedIn: 'root',
 })
 export class WebsocketService implements OnDestroy {
-  public webSocketData = new BehaviorSubject<any | null>(null);
+  public webSocketData = new BehaviorSubject<WebSocketData | null>(null);
   public webSocketConnected = new BehaviorSubject(false);
 
   private ws!: WebSocket;

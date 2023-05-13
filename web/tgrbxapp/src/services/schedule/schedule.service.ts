@@ -116,7 +116,6 @@ export class ScheduleService implements IScheduleService {
       .pipe(shareReplay())
       .subscribe((response) => {
         if (response.status == 200) {
-          console.log(response.body?.schedules);
           this.schedulesInternal = response.body?.schedules || [];
           this.notify();
         }

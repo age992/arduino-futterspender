@@ -6,6 +6,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 import { FetchInterval } from 'src/models/FetchInterval';
 import { WebsocketService } from '../websocket/websocket.service';
+import { WebSocketData } from 'src/models/WebSocketData';
 
 @Injectable({
   providedIn: 'root',
@@ -24,7 +25,7 @@ export class StatusService implements IStatusService {
     private websocketService: WebsocketService
   ) {
     //this.setFetching(this.fetchIntervalNormal);
-    websocketService.webSocketData.subscribe((d: any) => {
+    websocketService.webSocketData.subscribe((d: WebSocketData | null) => {
       if (!!d) {
         this.machineStatusInternal = d.status;
         this.notify();

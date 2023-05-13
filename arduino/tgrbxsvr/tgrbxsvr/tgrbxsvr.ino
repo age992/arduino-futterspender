@@ -202,7 +202,7 @@ void loop() {
   delay(delayVal);
 }
 
-ScaleData createScaleDataHistory(int scaleID, double value) {
+ScaleData createScaleDataHistory(Scale scaleID, double value) {
   ScaleData data;
   data.CreatedOn = currentTimestamp;
   data.ScaleID = scaleID;
@@ -299,7 +299,7 @@ void handleCurrentData(SignificantWeightChange significantChange) {
   switch (significantChange) {
     case OnlyContainer:
       {
-        ScaleData data = createScaleDataHistory(0, currentStatus->ContainerLoad);
+        ScaleData data = createScaleDataHistory(Container, currentStatus->ContainerLoad);
         containerScaleHistoryBuffer.push_back(data);
         ArduinoJson::JsonObject dataObject = scaleData.createNestedObject();
         setJsonScaleHistory(&data, dataObject);
@@ -307,27 +307,27 @@ void handleCurrentData(SignificantWeightChange significantChange) {
       }
     case OnlyPlate:
       {
-        ScaleData data = createScaleDataHistory(1, currentStatus->PlateLoad);
+        /*ScaleData data = createScaleDataHistory(Plate, currentStatus->PlateLoad);
         plateScaleHistoryBuffer.push_back(data);
         ArduinoJson::JsonObject dataObject = scaleData.createNestedObject();
-        setJsonScaleHistory(&data, dataObject);
+        setJsonScaleHistory(&data, dataObject);*/
         break;
       }
     case Both:
       {
-        ScaleData data_A = createScaleDataHistory(0, currentStatus->ContainerLoad);
+        ScaleData data_A = createScaleDataHistory(Container, currentStatus->ContainerLoad);
         containerScaleHistoryBuffer.push_back(data_A);
         ArduinoJson::JsonObject dataObject_A = scaleData.createNestedObject();
         setJsonScaleHistory(&data_A, dataObject_A);
-        ;
-        ScaleData data_B = createScaleDataHistory(1, currentStatus->PlateLoad);
+        ScaleData data_B = createScaleDataHistory(Plate, currentStatus->PlateLoad);
         plateScaleHistoryBuffer.push_back(data_B);
         ArduinoJson::JsonObject dataObject_B = scaleData.createNestedObject();
         setJsonScaleHistory(&data_B, dataObject_B);
         break;
       }
   }
-
+  
+  Serial.println(scaleData.size());
   if (clientsAvailable) {
     String serialized;
     serializeJson(doc, serialized);
@@ -337,23 +337,31 @@ void handleCurrentData(SignificantWeightChange significantChange) {
   }
   doc.clear();
 
+  Serial.print("Container Scale buffer: ");
+  Serial.println(containerScaleHistoryBuffer.size());
+  Serial.print("Plate Scale buffer: ");
+  Serial.println(plateScaleHistoryBuffer.size());
   //save and clear history buffers if possible/necessary
   if (CURRENT_LOOP_FREQ == LOOP_FREQ_NORMAL) {
     if (!containerScaleHistoryBuffer.empty()) {
       //log
+      Serial.print("Empty + log Container Scale buffer");
       containerScaleHistoryBuffer.clear();
     }
     if (!plateScaleHistoryBuffer.empty()) {
       //log
+      Serial.print("Empty + log Plate Scale buffer");
       plateScaleHistoryBuffer.clear();
     }
   } else {
     if (containerScaleHistoryBuffer.size() >= MAX_HISTORY_BUFFER) {
       //log
+      Serial.print("Empty + log Container Scale buffer");
       containerScaleHistoryBuffer.clear();
     }
     if (plateScaleHistoryBuffer.size() >= MAX_HISTORY_BUFFER) {
       //log
+      Serial.print("Empty + log Plate Scale buffer");
       plateScaleHistoryBuffer.clear();
     }
   }

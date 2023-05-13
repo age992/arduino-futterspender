@@ -60,10 +60,15 @@ struct Event {
   String message;
 };
 
+enum Scale {
+  Container,
+  Plate
+};
+
 struct ScaleData {
   int ID;
   long CreatedOn;
-  int ScaleID;  //0 = scale_A, 1 = scale_B
+  Scale ScaleID;  //0 = scale_A, 1 = scale_B
   double Value;
 };
 

@@ -7,6 +7,8 @@ import { EScheduleMode } from 'src/lib/EScheduleMode';
 import { getTimestamp } from 'src/lib/DateConverter';
 import { SettingsService } from 'src/services/settings/settings.service';
 import { Settings } from 'src/models/Settings';
+import { HistoryService } from 'src/services/history/history.service';
+import { HistoryData } from 'src/models/WebSocketData';
 
 @Component({
   selector: 'dashboard',
@@ -29,10 +31,13 @@ export class DashboardComponent implements OnInit {
   public FetchingSchedule: boolean = false;
   public UpdatingActivity: boolean = false;
 
+  public History!: HistoryData;
+
   constructor(
     public statusService: StatusService,
     private scheduleService: ScheduleService,
-    private settingsService: SettingsService
+    private settingsService: SettingsService,
+    private historyService: HistoryService
   ) {}
 
   ngOnInit(): void {
@@ -82,6 +87,8 @@ export class DashboardComponent implements OnInit {
     this.scheduleService.FetchingSchedules.subscribe((l) => {
       this.FetchingSchedule = l;
     });
+
+    this.History = this.historyService.History;
   }
 
   toggleScheduleActive = (active: boolean) => {
