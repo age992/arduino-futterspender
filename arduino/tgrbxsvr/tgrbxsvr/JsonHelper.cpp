@@ -48,7 +48,7 @@ String serializeNotification(Notification data) {
   return serialized;
 };
 
-void setJsonDaytimes(ArduinoJson::JsonArray& jsonArray, const std::vector<long>& data) {
+void setJsonDaytimes(ArduinoJson::JsonArray& jsonArray, const std::vector<long>& data) { 
   for (long datetime : data) {
     jsonArray.add(datetime);
   }
@@ -57,21 +57,17 @@ void setJsonDaytimes(ArduinoJson::JsonArray& jsonArray, const std::vector<long>&
 String serializeDaytimes(const std::vector<long>& data) {
   Serial.println("Serialize daytimes");
   String serialized;
-  String f;
-  ArduinoJson::StaticJsonDocument<512> doc;
+  ArduinoJson::StaticJsonDocument<1024> doc;
   ArduinoJson::JsonArray jsonArray = doc.to<JsonArray>();
   setJsonDaytimes(jsonArray, data);
   serializeJson(jsonArray, serialized);
-  serializeJson(doc, f);
-  Serial.println(std::to_string(jsonArray.size()).c_str());
   Serial.println(serialized);
-  Serial.println(f);
   return serialized;
 };
 
 String serializeSchedules(const std::vector<Schedule>& data) {
   String serialized;
-  ArduinoJson::StaticJsonDocument<512> doc;
+  ArduinoJson::DynamicJsonDocument doc(4096);
   ArduinoJson::JsonArray list = doc.createNestedArray("schedules");
 
   for (size_t i = 0; i < data.size(); i++) {
@@ -95,7 +91,7 @@ String serializeSchedules(const std::vector<Schedule>& data) {
 };
 
 Schedule* deserializeSchedule(char* data) {
-  ArduinoJson::StaticJsonDocument<512> doc;
+  ArduinoJson::DynamicJsonDocument doc(4096);
   DeserializationError error = deserializeJson(doc, data);
 
   if (error) {
@@ -118,9 +114,8 @@ Schedule* deserializeSchedule(char* data) {
 };
 
 std::vector<long> deserializeDaytimes(String data) {
-  Serial.println("Deserialize daytimes");
   std::vector<long> daytimes;
-  StaticJsonDocument<512> doc;
+  StaticJsonDocument<1024> doc;
   DeserializationError error = deserializeJson(doc, data);
 
   if (error) {
@@ -134,7 +129,6 @@ std::vector<long> deserializeDaytimes(String data) {
     daytimes.push_back(v.as<long>());
   }
 
-  Serial.println(std::to_string(daytimes.size()).c_str());
   return daytimes;
 }
 

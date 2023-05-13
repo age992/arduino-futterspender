@@ -58,11 +58,9 @@ export class SchedulesComponent implements OnInit {
         return;
       }
       this.schedules = s;
-      if (!this.selectedSchedule) {
-        const selected = this.schedules.find((s) => s.Selected);
-        if (selected) {
-          this.schedulesListControl.setValue([selected]);
-        }
+      const selected = this.schedules.find((s) => s.Selected);
+      if (selected && !this.saveOrDeletingSchedule) {
+        this.schedulesListControl.setValue([selected]);
       }
     });
     this.scheduleService.FetchingSchedules.subscribe((f) => {
@@ -99,6 +97,7 @@ export class SchedulesComponent implements OnInit {
   btnAdd = () => {
     this.schedulesListControl.setValue([]);
     this.selectedSchedule = {
+      CreatedOn: new Date().getTime(),
       Active: false,
       Selected: false,
       OnlyWhenEmpty: false,
@@ -163,10 +162,12 @@ export class SchedulesComponent implements OnInit {
       this.openSnackBar('Bitte fülle alle Pflichtfelder aus!');
       return;
     }
-
+    this.selectedSchedule.Daytimes?.forEach((d) => console.log(d));
     const callback = (r: HttpResponse<any>) => {
       if (r.status == 200) {
-        this.schedulesListControl.setValue([]);
+        if (!this.selectedSchedule?.ID) {
+          this.schedulesListControl.setValue([]);
+        }
         this.openSnackBar('Gespeichert!');
       } else {
         this.openSnackBar('Fehler beim Speichern der Änderungen!');

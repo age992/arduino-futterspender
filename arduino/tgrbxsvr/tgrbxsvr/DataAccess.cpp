@@ -388,8 +388,8 @@ int DataAccess::insertSchedule(Schedule* schedule) {
   sqlite3_bind_int(stmt, 3, schedule->Mode);
   sqlite3_bind_int(stmt, 4, schedule->Active ? 1 : 0);
   sqlite3_bind_int(stmt, 5, schedule->Selected ? 1 : 0);
-  const char *dayTimesString = serializeDaytimes(schedule->Daytimes).c_str();
-  sqlite3_bind_text(stmt, 6, dayTimesString, strlen(dayTimesString), SQLITE_TRANSIENT);
+  String dayTimesString = serializeDaytimes(schedule->Daytimes);
+  sqlite3_bind_text(stmt, 6, dayTimesString.c_str(), strlen(dayTimesString.c_str()), SQLITE_TRANSIENT);
   sqlite3_bind_int(stmt, 7, schedule->MaxTimes);
   sqlite3_bind_int64(stmt, 8, schedule->MaxTimesStartTime);
   sqlite3_bind_int(stmt, 9, schedule->OnlyWhenEmpty ? 1 : 0);
@@ -422,10 +422,8 @@ bool DataAccess::updateSchedule(Schedule* schedule) {
   sqlite3_bind_int(stmt, 3, schedule->Mode);
   sqlite3_bind_int(stmt, 4, schedule->Active ? 1 : 0);
   sqlite3_bind_int(stmt, 5, schedule->Selected ? 1 : 0);
-  const char *dayTimesString = serializeDaytimes(schedule->Daytimes).c_str();
-  Serial.print("asdf ");
-  Serial.println(dayTimesString);
-  sqlite3_bind_text(stmt, 6, dayTimesString, strlen(dayTimesString), SQLITE_TRANSIENT);
+  String dayTimesString = serializeDaytimes(schedule->Daytimes);
+  sqlite3_bind_text(stmt, 6, dayTimesString.c_str(), strlen(dayTimesString.c_str()), SQLITE_TRANSIENT);
   sqlite3_bind_int(stmt, 7, schedule->MaxTimes);
   sqlite3_bind_int64(stmt, 8, schedule->MaxTimesStartTime);
   sqlite3_bind_int(stmt, 9, schedule->OnlyWhenEmpty ? 1 : 0);

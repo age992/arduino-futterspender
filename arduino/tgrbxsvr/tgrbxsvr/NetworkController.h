@@ -10,14 +10,16 @@ extern MachineController machineController;
 extern Schedule* selectedSchedule;
 extern UserSettings* userSettings;
 
-extern long getDay(long timestampMillis);
+extern void setSchedule(Schedule* newSchedule);
+extern long getDay(long timestamp);
 
 class NetworkController {
 public:
   bool initNetworkConnection(Config* config);
 
   bool initNTP();
-  long getCurrentTime();
+  long getCurrentDaytime();
+  int getToday();
 
   bool initWebserver();
   bool hasWebClients();

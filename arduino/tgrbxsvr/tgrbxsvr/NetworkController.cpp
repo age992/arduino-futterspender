@@ -1,3 +1,4 @@
+#include <string>
 #include <vector>
 #include "NetworkController.h"
 #include "freertos/FreeRTOS.h"
@@ -18,7 +19,9 @@ const String frontendRootPath = "/frontend/";
 
 WiFiUDP ntpUdp;
 NTPClient ntpClient(ntpUdp);
-long startUpTimestampMS = 0;
+long startUpTimestamp = 0;
+long startUpDaytimeMS = 0;
+int today = 0;
 
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
@@ -74,16 +77,19 @@ void handleApiScheduleActivate(AsyncWebServerRequest *request) {
     dataAccess.setSelectSchedule(id, true);
     dataAccess.setActiveSchedule(id, active);
 
-    if (selectedSchedule != nullptr) {
-      if (selectedSchedule->ID != id) {
-        dataAccess.setSelectSchedule(selectedSchedule->ID, false);
-        dataAccess.setActiveSchedule(selectedSchedule->ID, false);
-        selectedSchedule = dataAccess.getSelectedSchedule();
-      } else {
-        selectedSchedule->Active = active;
-      }
+    if (selectedSchedule != nullptr && selectedSchedule->ID != id) {
+      dataAccess.setSelectSchedule(selectedSchedule->ID, false);
+      dataAccess.setActiveSchedule(selectedSchedule->ID, false);
+    }
+
+    Schedule *newSchedule = dataAccess.getSelectedSchedule();
+    setSchedule(newSchedule);
+    
+    Serial.println("Selected Schedule: ");
+    if (selectedSchedule == nullptr) {
+      Serial.println("nullptr");
     } else {
-      selectedSchedule = dataAccess.getSelectedSchedule();
+      Serial.println(selectedSchedule->Name);
     }
     request->send(200);
   } catch (...) {
@@ -148,7 +154,7 @@ void handleApiSchedule(AsyncWebServerRequest *request, uint8_t *data) {
         const int id = dataAccess.insertSchedule(schedule);
         if (id > 0) {
           request->send(200, "application/json", std::to_string(id).c_str());
-        }else{
+        } else {
           request->send(500);
         }
         return;
@@ -156,10 +162,13 @@ void handleApiSchedule(AsyncWebServerRequest *request, uint8_t *data) {
     case HTTP_PUT:
       {
         Serial.print("PUT");
-        Schedule* schedule = deserializeSchedule((char *)data);
+        Schedule *schedule = deserializeSchedule((char *)data);
         if (dataAccess.updateSchedule(schedule)) {
           request->send(200);
-        }else{
+          if (schedule->ID == selectedSchedule->ID) {
+            setSchedule(schedule);
+          }
+        } else {
           request->send(500);
         }
         return;
@@ -268,18 +277,24 @@ bool NetworkController::initNTP() {
     Serial.println("Couldn't fetch time via NTP...");
     delay(4000);
   }
-  startUpTimestampMS = ntpClient.getEpochTime() * 1000;
+  startUpTimestamp = ntpClient.getEpochTime();
+  today = getDay(startUpTimestamp);
+  startUpDaytimeMS = (startUpTimestamp - today * 86400L) * 1000;
   return true;
 }
 
-long NetworkController::getCurrentTime() {
+long NetworkController::getCurrentDaytime() {
   //@TODO: handle millis overflow and ntp updates!
   /*if(getDay(millis) > DAYS_UNTIL_NTP_UPDATE){
     ntpClient.update();
     startUpMillis = ntpClient.getEpochTime();
   }*/
-  return startUpTimestampMS + millis();
+  return startUpDaytimeMS + millis();
 }
+
+int NetworkController::getToday() {
+  return today;
+};
 
 bool NetworkController::initWebserver() {
   ws.onEvent(onWsEvent);
@@ -300,12 +315,14 @@ bool NetworkController::initWebserver() {
   server.on("/api/schedule", HTTP_DELETE, [](AsyncWebServerRequest *request) {
     handleApiScheduleDelete(request);
   });
-  server.on("/api/schedule",  HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+  server.on(
+    "/api/schedule", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
       handleApiSchedule(request, data);
-  });
-  server.on("/api/schedule",  HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+    });
+  server.on(
+    "/api/schedule", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
       handleApiSchedule(request, data);
-  });
+    });
 
   server.on("/api", [](AsyncWebServerRequest *request) {
     request->send(200, "text/html", "Api base route");

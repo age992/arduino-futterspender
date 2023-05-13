@@ -55,7 +55,6 @@ export class ScheduleService implements IScheduleService {
 
   addSchedule(schedule: Schedule): Observable<HttpResponse<number>> {
     console.log('Add schedule...');
-    schedule.CreatedOn = new Date().getTime();
     const obs = this.http
       .post<number>(environment.apiUrl + '/schedule', schedule, {
         observe: 'response',

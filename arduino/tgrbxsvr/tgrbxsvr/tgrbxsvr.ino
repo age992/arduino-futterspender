@@ -36,7 +36,6 @@ NetworkController networkController;
 MachineStatus* previousStatus = nullptr;
 MachineStatus* currentStatus = nullptr;
 
-long today = 0;
 long previousTimestamp = 0;
 long currentTimestamp = 0;
 
@@ -73,6 +72,12 @@ void motorOperationCheckTask(void* pvParameters) {
   }
 }
 
+void setSchedule(Schedule* newSchedule) {
+  delete selectedSchedule;
+  selectedSchedule = newSchedule;
+  //log switch event
+}
+
 void setup() {
   Serial.begin(115200);
 
@@ -86,8 +91,11 @@ void setup() {
 
   networkController.initNetworkConnection(config);
   networkController.initNTP();
-  currentTimestamp = networkController.getCurrentTime();
-  today = getDay(currentTimestamp);
+  currentTimestamp = networkController.getCurrentDaytime();
+  Serial.print("CurrentTimestamp: ");
+  Serial.println(std::to_string(currentTimestamp).c_str());
+  Serial.print("Today: ");
+  Serial.println(std::to_string(networkController.getToday()).c_str());
 
   selectedSchedule = dataAccess.getSelectedSchedule();
   Serial.print("Selected Schedule: ");
@@ -100,7 +108,7 @@ void setup() {
   //const long actualLastFedTimestamp = dataAccess.getLastFedTimestampBefore(currentTimestamp);
   lastFedTimestamp = currentTimestamp;
   //log missed feeds betwen actualLastFedTimestamp and lastFedTimestamp
-  numTimesFedToday = dataAccess.getNumFedFromTo(today, today + 1);
+  numTimesFedToday = dataAccess.getNumFedFromTo(networkController.getToday(), networkController.getToday() + 1);
 
   machineController.initControls();
   machineController.calibrateContainerScale(systemSettings->ContainerScale, systemSettings->ContainerOffset);
@@ -118,7 +126,7 @@ void setup() {
   previousStatus = status;
 }
 
-void printRam(){
+void printRam() {
   size_t totalHeap = ESP.getHeapSize();
 
   // Get the free heap size
@@ -141,7 +149,7 @@ void loop() {
   //printRam();
   //Serial.print("loop ");
   //Serial.println(millis());
-  currentTimestamp = networkController.getCurrentTime();
+  currentTimestamp = networkController.getCurrentDaytime();
   currentStatus = getUpdatedStatus();
 
   if (feedPending()) {
@@ -355,19 +363,33 @@ void handleNotifications() {
 }
 
 bool feedPending() {
+  Serial.println("Feed pending?...");
   if (selectedSchedule == nullptr || !selectedSchedule->Active) {
+    Serial.println("Nope");
     return false;
   }
 
   bool pending = false;
 
   if (selectedSchedule->Mode == FixedDaytime) {
-    std::vector<long> dayTimesSmallerNow;
-    std::copy_if(selectedSchedule->Daytimes.begin(), selectedSchedule->Daytimes.end(), std::back_inserter(dayTimesSmallerNow), [](long n) {
-      return n <= currentTimestamp / 1000;
+    long latestFeedtimeSmallerNow = -1;
+    //order daytimes descending
+    std::sort(selectedSchedule->Daytimes.begin(), selectedSchedule->Daytimes.end(), [](int a, int b) {
+      return a > b;
     });
-    auto max_it = std::max_element(dayTimesSmallerNow.begin(), dayTimesSmallerNow.end());
-    pending = max_it == dayTimesSmallerNow.end() ? false : *max_it > lastFedTimestamp;
+    for (long datetime : selectedSchedule->Daytimes) {
+      if (datetime <= currentTimestamp) {
+        latestFeedtimeSmallerNow = datetime;
+        break;
+      }
+    }
+    Serial.print("CurrentTimestamp: ");
+    Serial.println(currentTimestamp);
+    Serial.print("LatestFeedtimeSmallerNow: ");
+    Serial.println(latestFeedtimeSmallerNow);
+    Serial.print("LastFed: ");
+    Serial.println(lastFedTimestamp);
+    pending = latestFeedtimeSmallerNow != -1 && latestFeedtimeSmallerNow > lastFedTimestamp;
   } else if (selectedSchedule->Mode == MaxTimes) {
     pending = currentStatus->PlateLoad <= PLATE_EMPTY_THRESHOLD && numTimesFedToday < selectedSchedule->MaxTimes;
   }
@@ -376,9 +398,9 @@ bool feedPending() {
 }
 
 bool dayChanged() {
-  return getDay(currentTimestamp) > getDay(previousTimestamp);
+  return getDay(currentTimestamp / 1000) > getDay(previousTimestamp / 1000);
 }
 
-long getDay(long timestampMillis) {
-  return timestampMillis / 86400000L;
+long getDay(long timestamp) {
+  return timestamp / 86400L;
 }
