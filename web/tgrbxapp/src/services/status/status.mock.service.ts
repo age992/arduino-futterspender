@@ -46,6 +46,8 @@ export class StatusMockService implements IStatusService {
           MotorOperation: true,
           SDCardConnection: true,
           Open: false,
+          AutomaticFeeding: false,
+          ManualFeeding: false,
         };
         this.lastUpdate = now;
         this.machineStatusInternal = newMachineStatus;

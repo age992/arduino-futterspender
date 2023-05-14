@@ -11,6 +11,8 @@ struct MachineStatus {
   bool SDCardConnection;
   bool MotorOperation;
   bool WiFiConnection;
+  bool AutomaticFeeding;
+  bool ManualFeeding;
 };
 
 struct MotorCheckParams {
@@ -50,14 +52,14 @@ enum EventType { Feed,
                  WiFiConnectionLost,
                  WiFiConnectionReturned,
                  SDConnectionLost,
-                 SDConnectionReturned
+                 SDConnectionReturned,
+                 SkippedFeed
 };
 
 struct Event {
   int ID;
   long CreatedOn;
   EventType Type;
-  String message;
 };
 
 enum Scale {

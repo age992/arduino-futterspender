@@ -8,17 +8,21 @@
 
 String serializeStatus(MachineStatus data);
 void setJsonStatus(MachineStatus* data, ArduinoJson::JsonObject statusObject);
+
 String serializeScaleData(ScaleData data);
 void setJsonScaleHistory(ScaleData* data, ArduinoJson::JsonObject dataObject);
 
-String serializeNotification(Notification data);
-String serializeSchedule(Schedule data);
-String serializeDaytimes(const std::vector<long>& data);
-String serializeSchedules(const std::vector<Schedule>& data);
-
-Schedule* deserializeSchedule(char* data);
-std::vector<long> deserializeDaytimes(String data);
-
 Notification deserializeNotification(String data);
+String serializeNotification(Notification data);
+String serializeUserSettings(const UserSettings* settings);
+UserSettings* deserializeUserSettings(const char* data); 
+
+String serializeSchedule(Schedule data);
+String serializeSchedules(const std::vector<Schedule>& data);
+void setJsonSchedule(ArduinoJson::JsonObject scheduleObject, Schedule* schedule);
+Schedule* deserializeSchedule(char* data);
+
+String serializeDaytimes(const std::vector<long>& data);
+std::vector<long> deserializeDaytimes(String data);
 
 #endif

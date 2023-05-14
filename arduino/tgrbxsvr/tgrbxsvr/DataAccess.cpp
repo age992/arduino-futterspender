@@ -36,6 +36,33 @@ const char *sqlite3_column_string(sqlite3_stmt *stmt, int index) {
   return reinterpret_cast<const char *>(sqlite3_column_text(stmt, index));
 }
 
+int insertScheduleToDB(Schedule *schedule, sqlite3 *db) {
+  const char *sql = "INSERT INTO Schedules (CreatedOn, Name, Mode, Selected, Active, Daytimes, MaxTimes, MaxTimesStartTime, OnlyWhenEmpty) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+  sqlite3_stmt *stmt;
+  int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+
+  sqlite3_bind_int64(stmt, 1, schedule->CreatedOn);
+  sqlite3_bind_text(stmt, 2, schedule->Name.c_str(), strlen(schedule->Name.c_str()), SQLITE_TRANSIENT);
+  sqlite3_bind_int(stmt, 3, schedule->Mode);
+  sqlite3_bind_int(stmt, 4, schedule->Active ? 1 : 0);
+  sqlite3_bind_int(stmt, 5, schedule->Selected ? 1 : 0);
+  String dayTimesString = serializeDaytimes(schedule->Daytimes);
+  sqlite3_bind_text(stmt, 6, dayTimesString.c_str(), strlen(dayTimesString.c_str()), SQLITE_TRANSIENT);
+  sqlite3_bind_int(stmt, 7, schedule->MaxTimes);
+  sqlite3_bind_int64(stmt, 8, schedule->MaxTimesStartTime);
+  sqlite3_bind_int(stmt, 9, schedule->OnlyWhenEmpty ? 1 : 0);
+
+  rc = sqlite3_step(stmt);
+  if (rc != SQLITE_DONE) {
+    Serial.printf("ERROR executing stmt: %s\n", sqlite3_errmsg(db));
+  }
+
+  rc = sqlite3_finalize(stmt);
+  return sqlite3_last_insert_rowid(db);
+}
+
 bool DataAccess::init() {
   if (initialized) {
     return true;
@@ -119,7 +146,7 @@ int DataAccess::getNumFedFromTo(long from, long to) {
   }
   int count = 0;
 
-  char *sql = "SELECT COUNT(*) FROM Events WHERE Mode = ? AND CreatedOn >= ? AND CreatedOn < ?";
+  char *sql = "SELECT COUNT(*) FROM Events WHERE Type = ? AND CreatedOn >= ? AND CreatedOn < ?";
   sqlite3_stmt *stmt;
 
   int rc = sqlite3_prepare_v2(dbHistory, sql, -1, &stmt, NULL);
@@ -167,6 +194,66 @@ long DataAccess::getLastFedTimestampBefore(long before) {
   return lastFedTimestamp;
 }
 
+bool DataAccess::logEventHistory(Event event) {
+  if (openDb(historyDbPath.c_str(), &dbHistory)) {
+    Serial.println("Couldnt open dbHistory!");
+    return 0;
+  }
+
+  const char *sql = "INSERT INTO Events (CreatedOn, Type) VALUES (?, ?)";
+
+  sqlite3_stmt *stmt;
+  int rc = sqlite3_prepare_v2(dbHistory, sql, -1, &stmt, NULL);
+
+  sqlite3_bind_int64(stmt, 1, event.CreatedOn);
+  sqlite3_bind_int(stmt, 2, event.Type);
+
+  rc = sqlite3_step(stmt);
+  if (rc != SQLITE_DONE) {
+    Serial.printf("ERROR executing stmt: %s\n", sqlite3_errmsg(dbHistory));
+  }
+
+  rc = sqlite3_finalize(stmt);
+  sqlite3_close(dbHistory);
+  return rc == SQLITE_DONE;
+};
+
+bool DataAccess::logScaleHistory(std::vector<ScaleData> &scaleData) {
+  if (openDb(historyDbPath.c_str(), &dbHistory)) {
+    Serial.println("Couldnt open dbHistory!");
+    return 0;
+  }
+
+  int rc = SQLITE_OK;
+  sqlite3_stmt *stmt;
+  const char *sql = "INSERT INTO ScaleData (CreatedOn, ScaleID, Value) VALUES (?, ?, ?)";
+  rc = sqlite3_prepare_v2(dbHistory, sql, -1, &stmt, NULL);
+
+  for (ScaleData data : scaleData) {
+    sqlite3_bind_int64(stmt, 1, data.CreatedOn);
+    sqlite3_bind_int(stmt, 2, data.ScaleID);
+    sqlite3_bind_double(stmt, 3, data.Value);
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+      Serial.printf("ERROR executing stmt: %s\n", sqlite3_errmsg(dbHistory));
+    }
+  }
+
+  rc = sqlite3_finalize(stmt);
+  sqlite3_close(dbHistory);
+  return rc == SQLITE_DONE;
+};
+
+bool DataAccess::logScheduleHistory(Schedule *schedule) {
+  if (openDb(historyDbPath.c_str(), &dbHistory)) {
+    Serial.println("Couldnt open dbHistory!");
+    return 0;
+  }
+  int newID = insertScheduleToDB(schedule, dbHistory);
+  sqlite3_close(dbHistory);
+  return newID;
+};
+
 //--- DB: User ---
 
 UserSettings *DataAccess::getUserSettings() {
@@ -187,29 +274,18 @@ UserSettings *DataAccess::getUserSettings() {
     settings->PetName = sqlite3_column_string(stmt, 0);
     settings->PlateTAR = sqlite3_column_double(stmt, 1);
     settings->PlateFilling = sqlite3_column_double(stmt, 2);
-
-    String notiListString = sqlite3_column_string(stmt, 3);  //deserialize json
-    StaticJsonDocument<512> doc;
-    DeserializationError error = deserializeJson(doc, notiListString.c_str());
-
-    if (error) {
-      Serial.println(F("Failed to deserialize Notifications for UserSettings"));
-      return nullptr;
-    };
-
-    NotificationList *notificationList = new NotificationList();
-    notificationList->ContainerEmpty.Active = doc["ContainerEmpty"]["Active"].as<bool>();
-    notificationList->ContainerEmpty.Email = doc["ContainerEmpty"]["Email"].as<bool>();
-    notificationList->ContainerEmpty.Phone = doc["ContainerEmpty"]["Phone"].as<bool>();
-    notificationList->DidNotEatInADay.Active = doc["DidNotEatInADay"]["Active"].as<bool>();
-    notificationList->DidNotEatInADay.Email = doc["DidNotEatInADay"]["Email"].as<bool>();
-    notificationList->DidNotEatInADay.Phone = doc["DidNotEatInADay"]["Phone"].as<bool>();
-
-    settings->Notifications = *notificationList;
-    settings->Email = sqlite3_column_string(stmt, 4);
-    settings->Phone = sqlite3_column_string(stmt, 5);
-    settings->Language = sqlite3_column_int(stmt, 6);
-    settings->Theme = sqlite3_column_int(stmt, 7);
+    String notiContainerEmptyString = sqlite3_column_string(stmt, 3);
+    Notification notiContainerEmpty = deserializeNotification(notiContainerEmptyString);
+    settings->Notifications.ContainerEmpty = notiContainerEmpty;
+    String notiDidNotEatString = sqlite3_column_string(stmt, 4);
+    Notification notiDidNotEat = deserializeNotification(notiDidNotEatString);
+    settings->Notifications.DidNotEatInADay = notiDidNotEat;
+    Serial.print("Noti eat Active: ");
+    Serial.println(settings->Notifications.DidNotEatInADay.Active);
+    settings->Email = sqlite3_column_string(stmt, 5);
+    settings->Phone = sqlite3_column_string(stmt, 6);
+    settings->Language = sqlite3_column_int(stmt, 7);
+    settings->Theme = sqlite3_column_int(stmt, 8);
   } else {
     Serial.printf("ERROR executing stmt: %s\n", sqlite3_errmsg(dbUser));
   }
@@ -219,8 +295,47 @@ UserSettings *DataAccess::getUserSettings() {
   return settings;
 }
 
-bool DataAccess::updateUserSettings(UserSettings userSettings) {
-  return false;
+bool DataAccess::updateUserSettings(UserSettings *userSettings) {
+  if (openDb(userDbPath.c_str(), &dbUser)) {
+    Serial.println("Couldnt open dbUser!");
+    return false;
+  }
+
+  char *sql = "UPDATE Settings "
+              "SET PetName = ?,"
+              "PlateTAR = ?,"
+              "PlateFilling = ?,"
+              "NotificationContainerEmpty = ?,"
+              "NotificationDidNotEatInADay = ?,"
+              "Email = ?,"
+              "Phone = ?,"
+              "Language = ?,"
+              "Theme = ? ";
+
+  sqlite3_stmt *stmt;
+
+  int rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
+
+  sqlite3_bind_text(stmt, 1, userSettings->PetName.c_str(), strlen(userSettings->PetName.c_str()), SQLITE_TRANSIENT);
+  sqlite3_bind_double(stmt, 2, userSettings->PlateTAR);
+  sqlite3_bind_double(stmt, 3, userSettings->PlateFilling);
+  String serializedNotiContEmpty = serializeNotification(userSettings->Notifications.ContainerEmpty);
+  sqlite3_bind_text(stmt, 4, serializedNotiContEmpty.c_str(), strlen(serializedNotiContEmpty.c_str()), SQLITE_TRANSIENT);
+  String serializedNotiDidNotEat = serializeNotification(userSettings->Notifications.DidNotEatInADay);
+  sqlite3_bind_text(stmt, 5, serializedNotiDidNotEat.c_str(), strlen(serializedNotiDidNotEat.c_str()), SQLITE_TRANSIENT);
+  sqlite3_bind_text(stmt, 6, userSettings->Email.c_str(), strlen(userSettings->Email.c_str()), SQLITE_TRANSIENT);
+  sqlite3_bind_text(stmt, 7, userSettings->Phone.c_str(), strlen(userSettings->Phone.c_str()), SQLITE_TRANSIENT);
+  sqlite3_bind_int(stmt, 8, userSettings->Language);
+  sqlite3_bind_int(stmt, 9, userSettings->Theme);
+
+  rc = sqlite3_step(stmt);
+  if (rc != SQLITE_DONE) {
+    Serial.printf("ERROR executing stmt: %s\n", sqlite3_errmsg(dbUser));
+  }
+
+  rc = sqlite3_finalize(stmt);
+  sqlite3_close(dbUser);
+  return rc == SQLITE_OK;
 }
 
 Schedule *readScheduleRow(sqlite3_stmt *stmt) {
@@ -371,40 +486,17 @@ Schedule *DataAccess::getScheduleByID(int id) {
   return schedulePointer;
 }
 
-int DataAccess::insertSchedule(Schedule* schedule) {
+int DataAccess::insertSchedule(Schedule *schedule) {
   if (openDb(userDbPath.c_str(), &dbUser)) {
     Serial.println("Couldnt open dbUser!");
     return 0;
   }
-
-  const char *sql = "INSERT INTO Schedules (CreatedOn, Name, Mode, Selected, Active, Daytimes, MaxTimes, MaxTimesStartTime, OnlyWhenEmpty) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-  sqlite3_stmt *stmt;
-  int rc = sqlite3_prepare_v2(dbUser, sql, -1, &stmt, NULL);
-
-  sqlite3_bind_int64(stmt, 1, schedule->CreatedOn);
-  sqlite3_bind_text(stmt, 2, schedule->Name.c_str(), strlen(schedule->Name.c_str()), SQLITE_TRANSIENT);
-  sqlite3_bind_int(stmt, 3, schedule->Mode);
-  sqlite3_bind_int(stmt, 4, schedule->Active ? 1 : 0);
-  sqlite3_bind_int(stmt, 5, schedule->Selected ? 1 : 0);
-  String dayTimesString = serializeDaytimes(schedule->Daytimes);
-  sqlite3_bind_text(stmt, 6, dayTimesString.c_str(), strlen(dayTimesString.c_str()), SQLITE_TRANSIENT);
-  sqlite3_bind_int(stmt, 7, schedule->MaxTimes);
-  sqlite3_bind_int64(stmt, 8, schedule->MaxTimesStartTime);
-  sqlite3_bind_int(stmt, 9, schedule->OnlyWhenEmpty ? 1 : 0);
-
-  rc = sqlite3_step(stmt);
-  if (rc != SQLITE_DONE) {
-    Serial.printf("ERROR executing stmt: %s\n", sqlite3_errmsg(dbUser));
-  }
-
-  rc = sqlite3_finalize(stmt);
+  int newID = insertScheduleToDB(schedule, dbUser);
   sqlite3_close(dbUser);
-  return sqlite3_last_insert_rowid(dbUser);
+  return newID;
 }
 
-bool DataAccess::updateSchedule(Schedule* schedule) {
+bool DataAccess::updateSchedule(Schedule *schedule) {
   if (openDb(userDbPath.c_str(), &dbUser)) {
     Serial.println("Couldnt open dbUser!");
     return false;

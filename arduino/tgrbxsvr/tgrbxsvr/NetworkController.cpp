@@ -56,8 +56,6 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
   }
 }
 
-//void switchSelectedSchedule(Schedule* newSchedule){}
-
 //-- Rest API handlers --//
 
 void handleApiScheduleActivate(AsyncWebServerRequest *request) {
@@ -74,23 +72,24 @@ void handleApiScheduleActivate(AsyncWebServerRequest *request) {
     const int id = std::stoi(pId->value().c_str());
     const bool active = pActive->value().equals("true");
 
-    dataAccess.setSelectSchedule(id, true);
-    dataAccess.setActiveSchedule(id, active);
-
     if (selectedSchedule != nullptr && selectedSchedule->ID != id) {
       dataAccess.setSelectSchedule(selectedSchedule->ID, false);
       dataAccess.setActiveSchedule(selectedSchedule->ID, false);
     }
 
+    dataAccess.setSelectSchedule(id, true);
+    dataAccess.setActiveSchedule(id, active);
+
     Schedule *newSchedule = dataAccess.getSelectedSchedule();
     setSchedule(newSchedule);
-    
+
     Serial.println("Selected Schedule: ");
     if (selectedSchedule == nullptr) {
       Serial.println("nullptr");
     } else {
       Serial.println(selectedSchedule->Name);
     }
+
     request->send(200);
   } catch (...) {
     request->send(400);
@@ -177,9 +176,20 @@ void handleApiSchedule(AsyncWebServerRequest *request, uint8_t *data) {
   request->send(400);
 }
 
-void handleApiSettings(AsyncWebServerRequest *request) {
-  WebRequestMethodComposite method = request->method();
-  request->send(200);
+void handleApiSettingsGet(AsyncWebServerRequest *request) {
+  String response = serializeUserSettings(userSettings);
+  request->send(200, "application/json", response);
+}
+
+void handleApiSettingsPut(AsyncWebServerRequest *request, uint8_t *data) {
+  UserSettings *updatedUserSettings = deserializeUserSettings((char *)data);
+  if (dataAccess.updateUserSettings(updatedUserSettings)) {
+    delete userSettings;
+    userSettings = updatedUserSettings;
+    request->send(200);
+  } else {
+    request->send(500);
+  }
 }
 
 void handleApiContainer(AsyncWebServerRequest *request) {
@@ -188,13 +198,20 @@ void handleApiContainer(AsyncWebServerRequest *request) {
     return;
   }
 
+  if (currentStatus->AutomaticFeeding) {
+    request->send(409);
+    return;
+  }
+
   AsyncWebParameter *p = request->getParam("open");
   bool open = p->value().equals("true");
 
   if (open) {
-    //servo.write(90);
+    openContainer();
+    currentStatus->ManualFeeding = true;
   } else {
-    //servo.write(0);
+    closeContainer();
+    currentStatus->ManualFeeding = false;
   }
 
   request->send(200);
@@ -304,9 +321,13 @@ bool NetworkController::initWebserver() {
   server.on("/api/container", [](AsyncWebServerRequest *request) {
     handleApiContainer(request);
   });
-  server.on("/api/settings", [](AsyncWebServerRequest *request) {
-    handleApiSettings(request);
+  server.on("/api/settings", HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleApiSettingsGet(request);
   });
+  server.on(
+    "/api/settings", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+      handleApiSettingsPut(request, data);
+    });
   server.on("/api/schedule/activate", [](AsyncWebServerRequest *request) {
     handleApiScheduleActivate(request);
   });

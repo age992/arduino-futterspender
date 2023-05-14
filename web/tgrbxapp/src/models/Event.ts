@@ -1,4 +1,4 @@
-export interface Event {
+export interface EventData {
   ID: number;
   CreatedOn: number;
   Type: EventType;
@@ -14,4 +14,5 @@ export enum EventType {
   WiFiConnectionReturned,
   SDConnectionLost,
   SDConnectionReturned,
+  SkippedFeed,
 }

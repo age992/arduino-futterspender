@@ -9,23 +9,30 @@ import { BehaviorSubject } from 'rxjs';
   providedIn: 'root',
 })
 export class HistoryService {
-  public History: HistoryData = {
+  private historyDataInternal: HistoryData = {
     schedules: [],
     events: [],
     scaleData: [],
   };
 
+  public HistoryData = new BehaviorSubject<HistoryData>(
+    this.historyDataInternal
+  );
+
   constructor(private websocketService: WebsocketService) {
     websocketService.webSocketData.subscribe((w: WebSocketData | null) => {
-      const d = w?.history;
-      if (d?.events && d.events.length > 0) {
-        this.History.events.push(...d.events);
-      }
-      if (d?.scaleData && d.scaleData.length > 0) {
-        this.History.scaleData.push(...d.scaleData);
-      }
-      if (d?.schedules && d.schedules.length > 0) {
-        this.History.schedules.push(...d.schedules);
+      const newHistoryData = w?.history;
+      if (!!newHistoryData) {
+        if (newHistoryData.events && newHistoryData.events.length > 0) {
+          this.historyDataInternal.events.push(...newHistoryData.events);
+        }
+        if (newHistoryData.scaleData && newHistoryData.scaleData.length > 0) {
+          this.historyDataInternal.scaleData.push(...newHistoryData.scaleData);
+        }
+        if (newHistoryData.schedules && newHistoryData.schedules.length > 0) {
+          this.historyDataInternal.schedules.push(...newHistoryData.schedules);
+        }
+        this.HistoryData.next(newHistoryData);
       }
     });
   }

@@ -4,4 +4,6 @@ export interface MachineStatus {
   Open: boolean;
   MotorOperation: boolean;
   SDCardConnection: boolean;
+  AutomaticFeeding: boolean;
+  ManualFeeding: boolean;
 }

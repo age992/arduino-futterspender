@@ -11,6 +11,7 @@
     (pointerdown)="btnFeed(true)"
     (pointerup)="btnFeed(false)"
     (contextmenu)="(false)"
+    [disabled]="MachineStatus?.AutomaticFeeding"
   >
     Füttern
   </button>

@@ -10,7 +10,7 @@ export const environment = {
   providers: [
     // { provide: StatusService, useClass: StatusMockService },
     //{ provide: ScheduleService, useClass: ScheduleMockService },
-    { provide: SettingsService, useClass: SettingsMockService },
+    //{ provide: SettingsService, useClass: SettingsMockService },
   ],
   apiUrl: 'http://tigerbox.local/api',
   //wsUrl: 'ws://tigerbox.local/ws',

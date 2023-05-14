@@ -1,3 +1,4 @@
+import { EventData } from './Event';
 import { MachineStatus } from './MachineStatus';
 import { ScaleData } from './ScaleData';
 import { Schedule } from './Schedule';
@@ -9,6 +10,6 @@ export interface WebSocketData {
 
 export interface HistoryData {
   schedules: Schedule[];
-  events: Event[];
+  events: EventData[];
   scaleData: ScaleData[];
 }

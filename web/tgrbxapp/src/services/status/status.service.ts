@@ -39,12 +39,12 @@ export class StatusService implements IStatusService {
 
   startFeed = () => {
     console.log('Start feeding...');
-    //this.http.get(environment.apiUrl + '/food/open').subscribe();
+    this.http.get(environment.apiUrl + '/container?open=true').subscribe();
   };
 
   stopFeed = () => {
     console.log('...feeding stopped.');
-    //this.http.get(environment.apiUrl + '/food/close').subscribe();
+    this.http.get(environment.apiUrl + '/container?open=false').subscribe();
   };
 
   private handleError(error: HttpErrorResponse) {

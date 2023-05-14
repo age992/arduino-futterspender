@@ -51,7 +51,10 @@
     <div id="foodPlanTime">
       <ng-container *ngIf="nextFeedingTime">
         <span>Nächste Fütterung</span>
-        <div id="divFoodPlanNextValue">
+        <div
+          id="divFoodPlanNextValue"
+          [class.disabledText]="!currentSchedule.Active"
+        >
           {{ getTimestamp(nextFeedingTime) }}
         </div>
       </ng-container>

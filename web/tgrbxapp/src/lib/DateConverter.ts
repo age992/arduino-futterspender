@@ -1,7 +1,11 @@
 export const getTimestamp = (unix: number) => {
+  return getLocalDate(unix).toLocaleTimeString([], { timeStyle: 'short' });
+};
+
+export const getLocalDate = (unix: number) => {
   const unixDate = new Date(unix);
   const localDate = new Date(unix + getMissingOffsetForLocal(unixDate));
-  return localDate.toLocaleTimeString([], { timeStyle: 'short' });
+  return localDate;
 };
 
 export const getMissingOffsetForLocal = (timestamp: Date) => {
@@ -12,7 +16,6 @@ export const getMissingOffsetForLocal = (timestamp: Date) => {
 
 export const timePickerToUnix = (timestamp: string) => {
   let dateString = new Date(0).toDateString();
-  debugger;
   let unix = new Date(dateString + ' ' + timestamp);
   return unix.getTime() - getMissingOffsetForLocal(unix);
 };

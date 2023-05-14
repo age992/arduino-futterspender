@@ -9,9 +9,12 @@ extern DataAccess dataAccess;
 extern MachineController machineController;
 extern Schedule* selectedSchedule;
 extern UserSettings* userSettings;
+extern MachineStatus* currentStatus;
 
 extern void setSchedule(Schedule* newSchedule);
 extern long getDay(long timestamp);
+extern void openContainer();
+extern void closeContainer();
 
 class NetworkController {
 public:

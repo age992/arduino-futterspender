@@ -21,11 +21,14 @@ public:
 
   int getNumFedFromTo(long from, long to);
   long getLastFedTimestampBefore(long before);
+  bool logEventHistory(Event event);
+  bool logScaleHistory(std::vector<ScaleData>& scaleData);
+  bool logScheduleHistory(Schedule *schedule);
 
   //--- DB: User ---
 
   UserSettings *getUserSettings();
-  bool updateUserSettings(UserSettings userSettings);
+  bool updateUserSettings(UserSettings *userSettings);
 
   Schedule *getSelectedSchedule();
   bool setSelectSchedule(int scheduleID, bool selected);
