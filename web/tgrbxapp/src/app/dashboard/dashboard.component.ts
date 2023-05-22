@@ -4,12 +4,18 @@ import { Schedule } from 'src/models/Schedule';
 import { ScheduleService } from 'src/services/schedule/schedule.service';
 import { StatusService } from 'src/services/status/status.service';
 import { EScheduleMode } from 'src/lib/EScheduleMode';
-import { getTimestamp } from 'src/lib/DateConverter';
+import {
+  getTimestamp,
+  getTodayUnixSeconds,
+  getTomorrowUnixSeconds,
+} from 'src/lib/DateConverter';
 import { SettingsService } from 'src/services/settings/settings.service';
 import { Settings } from 'src/models/Settings';
 import { HistoryService } from 'src/services/history/history.service';
 import { HistoryData } from 'src/models/WebSocketData';
 import { EventType } from 'src/models/Event';
+import * as Highcharts from 'highcharts';
+import { Scale } from 'src/models/ScaleData';
 
 @Component({
   selector: 'dashboard',
@@ -37,6 +43,46 @@ export class DashboardComponent implements OnInit {
     events: [],
     scaleData: [],
   };
+
+  Highcharts: typeof Highcharts = Highcharts;
+  chartOptions: Highcharts.Options = {
+    credits: { enabled: false },
+    title: {
+      text: '',
+    },
+    legend: { enabled: false },
+    xAxis: {
+      // min: getTodayUnixSeconds(),
+      //max: getTomorrowUnixSeconds(),
+      labels: { formatter: (_) => getTimestamp((_.value as number) * 1000) },
+    },
+    yAxis: {
+      title: { text: 'Gewicht' },
+      min: 0,
+    },
+    chart: {
+      zooming: { type: 'x' },
+    },
+    plotOptions: {
+      area: {
+        connectNulls: true,
+        dataGrouping: { enabled: true, groupPixelWidth: 100 },
+      },
+    },
+    series: [
+      {
+        name: 'Container',
+        data: [],
+        type: 'area',
+      },
+      {
+        name: 'Plate',
+        data: [],
+        type: 'area',
+      },
+    ],
+  };
+  protected updateFlag = false;
 
   constructor(
     public statusService: StatusService,
@@ -97,7 +143,28 @@ export class DashboardComponent implements OnInit {
         }
       }
       if (h.scaleData && h.scaleData.length > 0) {
-        this.History.scaleData.push(...h.scaleData);
+        //this.History.scaleData.push(...h.scaleData); //TODO
+        for (let data of h.scaleData) {
+          if (
+            this.History.scaleData.findIndex(
+              (_) => _.ScaleID == data.ScaleID && _.CreatedOn == data.CreatedOn
+            ) == -1
+          ) {
+            this.History.scaleData.push(data);
+          }
+        }
+        // console.log(this.History.scaleData);
+        const newContainerData = this.History.scaleData
+          .filter((_) => _.ScaleID == Scale.Container)
+          .map((_) => [_.CreatedOn, _.Value]);
+        const newPlateData = this.History.scaleData
+          .filter((_) => _.ScaleID == Scale.Plate)
+          .map((_) => [_.CreatedOn, _.Value]);
+        (this.chartOptions.series![0] as any).data = newContainerData;
+        (this.chartOptions.series![1] as any).data = newPlateData;
+        console.log(this.chartOptions.series![0]);
+        console.log(this.chartOptions.series![1]);
+        this.updateFlag = true;
       }
       if (h.schedules && h.schedules.length > 0) {
         this.History.schedules.push(...h.schedules);

@@ -27,6 +27,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { HttpClientModule } from '@angular/common/http';
+import { HighchartsChartModule } from 'highcharts-angular';
 
 @NgModule({
   declarations: [
@@ -60,6 +61,7 @@ import { HttpClientModule } from '@angular/common/http';
     MatSnackBarModule,
     MatButtonToggleModule,
     HttpClientModule,
+    HighchartsChartModule,
   ],
   providers: [...environment.providers],
   bootstrap: [AppComponent],

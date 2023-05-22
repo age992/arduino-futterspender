@@ -19,3 +19,17 @@ export const timePickerToUnix = (timestamp: string) => {
   let unix = new Date(dateString + ' ' + timestamp);
   return unix.getTime() - getMissingOffsetForLocal(unix);
 };
+
+export const getDayUnixSeconds = (date: Date) => {
+  const seconds = Math.floor(date.getTime() / 1000);
+  // return seconds - (seconds % 86400);
+  return seconds % 86400; // TODO!
+};
+
+export const getTodayUnixSeconds = () => {
+  return getDayUnixSeconds(new Date());
+};
+
+export const getTomorrowUnixSeconds = () => {
+  return getTodayUnixSeconds() + 86400;
+};

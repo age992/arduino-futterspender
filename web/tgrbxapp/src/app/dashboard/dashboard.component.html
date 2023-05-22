@@ -136,15 +136,20 @@
 </div>
 
 <div id="history" class="section">
-  <a routerLink="/history">
-    <button
-      id="btnZoom"
-      mat-mini-fab
-      color="basic"
-      aria-label="Example icon button with a home icon"
-    >
+  <highcharts-chart
+    [Highcharts]="Highcharts"
+    [options]="chartOptions"
+    [(update)]="updateFlag"
+    style="width: 100%; height: 100%; display: block"
+  ></highcharts-chart>
+  <button
+    id="btnZoom"
+    mat-mini-fab
+    color="basic"
+    aria-label="Example icon button with a home icon"
+  >
+    <a routerLink="/history">
       <mat-icon>zoom_in</mat-icon>
-    </button>
-    {{ History | json }}
-  </a>
+    </a>
+  </button>
 </div>
