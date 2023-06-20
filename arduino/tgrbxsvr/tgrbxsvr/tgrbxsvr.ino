@@ -156,8 +156,8 @@ void setup() {
   numTimesFedToday = dataAccess.getNumFedFromTo(networkController.getToday(), networkController.getToday() + 1);
 
   machineController.initControls();
-  machineController.calibrateContainerScale(systemSettings->ContainerScale, systemSettings->ContainerOffset);
-  machineController.calibratePlateScale(systemSettings->PlateScale, systemSettings->PlateOffset);
+  machineController.setContainerScaleCalibration(systemSettings->ContainerScale, systemSettings->ContainerOffset);
+  machineController.setPlateScaleCalibration(systemSettings->PlateScale, systemSettings->PlateOffset);
   networkController.initWebserver();
 
   previousTimestamp = currentTimestamp;

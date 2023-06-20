@@ -148,6 +148,39 @@ SystemSettings *DataAccess::getSystemSettings() {
   return settings;
 }
 
+bool DataAccess::updateSystemSettings(SystemSettings* settings){
+  if (openDb(systemDbPath.c_str(), &dbSystem)) {
+    Serial.println("Couldnt open dbSystem!");
+    return false;
+  }
+  
+  char *sql = "UPDATE Settings "
+              "SET CalibrationWeight = ?,"
+              "ContainerScale = ?,"
+              "ContainerOffset = ?,"
+              "PlateScale = ?,"
+              "PlateOffset = ? ";
+
+  sqlite3_stmt *stmt;
+
+  int rc = sqlite3_prepare_v2(dbSystem, sql, -1, &stmt, NULL);
+
+  sqlite3_bind_double(stmt, 1, settings->CalibrationWeight);
+  sqlite3_bind_double(stmt, 2, settings->ContainerScale);
+  sqlite3_bind_double(stmt, 3, settings->ContainerOffset);
+  sqlite3_bind_double(stmt, 4, settings->PlateScale);
+  sqlite3_bind_double(stmt, 5, settings->PlateOffset);
+
+  rc = sqlite3_step(stmt);
+  if (rc != SQLITE_DONE) {
+    Serial.printf("ERROR executing stmt: %s\n", sqlite3_errmsg(dbSystem));
+  }
+
+  rc = sqlite3_finalize(stmt);
+  sqlite3_close(dbUser);
+  return rc == SQLITE_OK;
+};
+
 //--- DB: History ---
 
 int DataAccess::getNumFedFromTo(long from, long to) {

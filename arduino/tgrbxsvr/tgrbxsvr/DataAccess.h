@@ -16,6 +16,7 @@ public:
   //--- DB: System ---
 
   SystemSettings *getSystemSettings();
+  bool updateSystemSettings(SystemSettings* settings);
 
   //--- DB: History ---
 

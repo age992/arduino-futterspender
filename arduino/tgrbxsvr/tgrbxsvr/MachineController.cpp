@@ -21,8 +21,6 @@ HX711 scale_B;
 
 double getScaleValue(HX711 scale) {
   long val = scale.get_units(LOADCELL_TIMES) * 10;
-  //Serial.print("raw val ");
-  //Serial.println(val);
   double scaleValue = (double)val / 10;
   return scaleValue;
 }
@@ -55,28 +53,58 @@ bool MachineController::initControls() {
   return true;
 }
 
-void MachineController::calibrateContainerScale(double scaleFactor, int offset){
+void MachineController::setContainerScaleCalibration(double scaleFactor, int offset) {
   scale_A.set_scale(scaleFactor);
   scale_A.set_offset(offset);
 };
 
-void MachineController::calibratePlateScale(double scaleFactor, int offset){
+void MachineController::setPlateScaleCalibration(double scaleFactor, int offset) {
   scale_B.set_scale(scaleFactor);
   scale_B.set_offset(offset);
 };
 
-double MachineController::getContainerLoad(){
+bool MachineController::calibrateContainerScale(double targetWeight) {
+  scale_A.calibrate_scale(targetWeight, 5);
+  systemSettings->ContainerScale = scale_A.get_scale();
+  return dataAccess.updateSystemSettings(systemSettings);
+};
+
+bool MachineController::calibratePlateScale(double targetWeight) {
+  scale_B.calibrate_scale(targetWeight, 5);
+  systemSettings->PlateScale = scale_B.get_scale();
+  return dataAccess.updateSystemSettings(systemSettings);
+};
+
+bool MachineController::tareContainerScale() {
+  scale_A.tare(LOADCELL_TIMES);
+  systemSettings->ContainerOffset = scale_A.get_offset();
+  return dataAccess.updateSystemSettings(systemSettings);
+};
+
+bool MachineController::tarePlateScale() {
+  scale_B.tare(LOADCELL_TIMES);
+  systemSettings->PlateOffset = scale_B.get_offset();
+  return dataAccess.updateSystemSettings(systemSettings);
+};
+
+bool MachineController::tarePlateScaleWithPlate() {
+  const double currentWeight = getScaleValue(scale_B);
+  userSettings->PlateTAR = currentWeight;
+  return dataAccess.updateUserSettings(userSettings);
+};
+
+double MachineController::getContainerLoad() {
   return getScaleValue(scale_A);
 };
 
-double MachineController::getPlateLoad(){
-  return getScaleValue(scale_B);
+double MachineController::getPlateLoad() {
+  return getScaleValue(scale_B) - userSettings->PlateTAR;
 };
 
-void MachineController::openContainer(){
+void MachineController::openContainer() {
   servo.write(SERVO_OPEN_ANGLE);
 };
 
-void MachineController::closeContainer(){
+void MachineController::closeContainer() {
   servo.write(SERVO_CLOSE_ANGLE);
 };

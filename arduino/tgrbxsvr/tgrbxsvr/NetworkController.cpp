@@ -176,8 +176,8 @@ void handleApiSchedule(AsyncWebServerRequest *request, uint8_t *data) {
   request->send(400);
 }
 
-void handleApiSettingsHistory(AsyncWebServerRequest *request){
-   /*if (!request->hasParam("from")
+void handleApiSettingsHistory(AsyncWebServerRequest *request) {
+  /*if (!request->hasParam("from")
    || !request->hasParam("to")) {
     request->send(400);
     return;
@@ -197,8 +197,8 @@ void handleApiSettingsHistory(AsyncWebServerRequest *request){
    }*/
 
   // std::vector<Event> schedules;
-   //dataAccess.getAllSchedules(schedules);
-   //String response = serializeSchedules(schedules);
+  //dataAccess.getAllSchedules(schedules);
+  //String response = serializeSchedules(schedules);
   // request->send(200, "application/json", response);
 }
 
@@ -243,49 +243,75 @@ void handleApiContainer(AsyncWebServerRequest *request) {
   request->send(200);
 }
 
-void handleApiScaleTare() {
+void handleApiScaleTare(AsyncWebServerRequest *request) {
   Serial.print("Handle Api scale tare ");
-  /*String param = server.arg("scale");
+
+  if (!request->hasParam("scale")) {
+    Serial.println("failed");
+    request->send(400);
+    return;
+  }
+
+  String param = request->getParam("scale")->value().c_str();
+  bool success = false;
 
   if (param == "A") {
     Serial.println("of scale A");
-    //machineController.
-    scale_A.tare(LOADCELL_TIMES);
-    systemSettings.ContainerOffset = scale_A.get_offset();
-    saveSystemSettings();
-    server.send(200);
+    success = machineController.tareContainerScale();
   } else if (param == "B") {
     Serial.println("of scale B");
-    scale_B.tare(LOADCELL_TIMES);
-    systemSettings.PlateOffset = scale_B.get_offset();
-    saveSystemSettings();
-    server.send(200);
+    success = machineController.tarePlateScale();
   } else {
     Serial.println("failed");
-    server.send(400);
-  }*/
+    request->send(400);
+  }
+
+  if (success) {
+    request->send(200);
+  } else {
+    request->send(500);
+  }
 }
 
-void handleApiScaleCalibration() {
-  /*Serial.print("Hanlde Api scale calibration ");
-  String param = server.arg("scale");
+void handleApiScaleCalibration(AsyncWebServerRequest *request) {
+  Serial.print("Hanlde Api scale calibration ");
+
+  if (!request->hasParam("scale") || !request->hasParam("targetWeight")) {
+    Serial.println("failed");
+    request->send(400);
+    return;
+  }
+
+  String param = request->getParam("scale")->value().c_str();
+  const double targetWeight = std::stod(request->getParam("targetWeight")->value().c_str());
+  bool success = false;
 
   if (param == "A") {
     Serial.println("of scale A");
-    scale_A.calibrate_scale(systemSettings.CalibrationWeight, 5);
-    systemSettings.ContainerScale = scale_A.get_scale();
-    saveSystemSettings();
-    server.send(200);
+    success = machineController.calibrateContainerScale(targetWeight);
   } else if (param == "B") {
     Serial.println("of scale B");
-    scale_B.calibrate_scale(systemSettings.CalibrationWeight, 5);
-    systemSettings.PlateScale = scale_B.get_scale();
-    saveSystemSettings();
-    server.send(200);
+    success = machineController.calibratePlateScale(targetWeight);
   } else {
     Serial.println("failed");
-    server.send(400);
-  }*/
+    request->send(400);
+  }
+
+  if (success) {
+    request->send(200);
+  } else {
+    request->send(500);
+  }
+}
+
+void handleApiPlateTare(AsyncWebServerRequest *request) {
+  Serial.print("Handle Api plate tare ");
+
+  if (machineController.tarePlateScaleWithPlate()) {
+    request->send(200);
+  } else {
+    request->send(500);
+  }
 }
 
 //---//
@@ -354,6 +380,15 @@ bool NetworkController::initWebserver() {
     "/api/settings", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
       handleApiSettingsPut(request, data);
     });
+  server.on("/api/settings/tare", HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleApiScaleTare(request);
+  });
+  server.on("/api/settings/tare/plate", HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleApiScaleTare(request);
+  });
+  server.on("/api/settings/calibration", HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleApiScaleCalibration(request);
+  });
   server.on("/api/schedule/activate", [](AsyncWebServerRequest *request) {
     handleApiScheduleActivate(request);
   });

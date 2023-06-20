@@ -6,11 +6,19 @@
 
 extern DataAccess dataAccess;
 
+extern SystemSettings* systemSettings;
+extern UserSettings* userSettings;
+
 class MachineController {
   public:
     bool initControls();
-    void calibrateContainerScale(double scaleFactor, int offset );
-    void calibratePlateScale(double scaleFactor, int offset );
+    void setContainerScaleCalibration(double scaleFactor, int offset );
+    void setPlateScaleCalibration(double scaleFactor, int offset );
+    bool calibrateContainerScale(double targetWeight);
+    bool calibratePlateScale(double targetWeight);
+    bool tareContainerScale();
+    bool tarePlateScale();
+    bool tarePlateScaleWithPlate();
     double getContainerLoad();
     double getPlateLoad();
     void openContainer();
