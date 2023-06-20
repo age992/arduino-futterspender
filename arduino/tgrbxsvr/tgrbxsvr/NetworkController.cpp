@@ -176,6 +176,32 @@ void handleApiSchedule(AsyncWebServerRequest *request, uint8_t *data) {
   request->send(400);
 }
 
+void handleApiSettingsHistory(AsyncWebServerRequest *request){
+   /*if (!request->hasParam("from")
+   || !request->hasParam("to")) {
+    request->send(400);
+    return;
+  }
+
+  AsyncWebParameter *pFrom = request->getParam("from");
+  const long from = std::stol(pFrom->value().c_str());
+
+  AsyncWebParameter *pTo = request->getParam("to");
+  const long to = std::stol(pTo->value().c_str());
+
+  EventType type = -1;
+
+   if (request->hasParam("type"){
+     AsyncWebParameter *pType = request->getParam("type");
+     type = std::stoi(pType->value().c_str());
+   }*/
+
+  // std::vector<Event> schedules;
+   //dataAccess.getAllSchedules(schedules);
+   //String response = serializeSchedules(schedules);
+  // request->send(200, "application/json", response);
+}
+
 void handleApiSettingsGet(AsyncWebServerRequest *request) {
   String response = serializeUserSettings(userSettings);
   request->send(200, "application/json", response);
@@ -345,6 +371,9 @@ bool NetworkController::initWebserver() {
     "/api/schedule", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
       handleApiSchedule(request, data);
     });
+  server.on("/api/history", HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleApiScheduleDelete(request);
+  });
 
   server.on("/api", [](AsyncWebServerRequest *request) {
     request->send(200, "text/html", "Api base route");

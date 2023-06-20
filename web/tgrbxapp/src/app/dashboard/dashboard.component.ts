@@ -45,6 +45,10 @@ export class DashboardComponent implements OnInit {
   };
 
   Highcharts: typeof Highcharts = Highcharts;
+  private readonly SCALE_SERIES_OPACITY = 0.2;
+  private readonly CONTAINER_SERIES_INDEX = 0;
+  private readonly PLATE_SERIES_INDEX = 1;
+
   chartOptions: Highcharts.Options = {
     credits: { enabled: false },
     title: {
@@ -52,9 +56,10 @@ export class DashboardComponent implements OnInit {
     },
     legend: { enabled: false },
     xAxis: {
-      // min: getTodayUnixSeconds(),
-      //max: getTomorrowUnixSeconds(),
+      min: getTodayUnixSeconds(),
+      max: getTomorrowUnixSeconds(),
       labels: { formatter: (_) => getTimestamp((_.value as number) * 1000) },
+      plotLines: [],
     },
     yAxis: {
       title: { text: 'Gewicht' },
@@ -74,11 +79,17 @@ export class DashboardComponent implements OnInit {
         name: 'Container',
         data: [],
         type: 'area',
+        dataGrouping: { enabled: true, groupPixelWidth: 100 },
+        opacity: this.SCALE_SERIES_OPACITY,
+        enableMouseTracking: false,
       },
       {
         name: 'Plate',
         data: [],
         type: 'area',
+        dataGrouping: { enabled: true, groupPixelWidth: 100 },
+        opacity: this.SCALE_SERIES_OPACITY,
+        enableMouseTracking: false,
       },
     ],
   };
@@ -130,6 +141,17 @@ export class DashboardComponent implements OnInit {
     this.historyService.HistoryData.subscribe((h) => {
       if (h.events && h.events.length > 0) {
         this.History.events.push(...h.events);
+        debugger;
+        const newEventFeed = this.History.events
+          .filter((_) => _.Type == EventType.Feed)
+          .map((_) => {
+            return {
+              color: '#FF0000', // Red
+              width: 50,
+              value: _.CreatedOn, // Position, you'll have to translate this to the values on your x axis
+            };
+          });
+        (this.chartOptions.xAxis as any).plotLines = newEventFeed;
         if (
           h.events.findIndex(
             (e) =>
@@ -160,8 +182,10 @@ export class DashboardComponent implements OnInit {
         const newPlateData = this.History.scaleData
           .filter((_) => _.ScaleID == Scale.Plate)
           .map((_) => [_.CreatedOn, _.Value]);
-        (this.chartOptions.series![0] as any).data = newContainerData;
-        (this.chartOptions.series![1] as any).data = newPlateData;
+        (this.chartOptions.series![this.CONTAINER_SERIES_INDEX] as any).data =
+          newContainerData;
+        (this.chartOptions.series![this.PLATE_SERIES_INDEX] as any).data =
+          newPlateData;
         console.log(this.chartOptions.series![0]);
         console.log(this.chartOptions.series![1]);
         this.updateFlag = true;

@@ -9,6 +9,13 @@
 
 bool initialized = false;
 
+const int SD_CS_PIN = 32;
+const int SD_CLK_PIN = 33;
+const int SD_MISO_PIN = 26;
+const int SD_MOSI_PIN = 25;
+
+SPIClass SPI_custom(HSPI);
+
 const char *configPath = "/config.json";
 const String dbPrefix = "/sd";
 const String dbRootPath = "/data";
@@ -68,7 +75,11 @@ bool DataAccess::init() {
     return true;
   }
 
-  while (!SD.begin()) {
+  SPI_custom.begin(SD_CLK_PIN, SD_MISO_PIN,SD_MOSI_PIN, SD_CS_PIN);
+
+  pinMode(SD_CS_PIN, OUTPUT);
+
+  while (!SD.begin(SD_CS_PIN, SPI_custom)) {
     Serial.println("Trying to initialize SD Card...");
     delay(3000);
   }

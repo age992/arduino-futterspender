@@ -3,6 +3,6 @@ import { StatusService } from 'src/services/status/status.service';
 export const environment = {
   production: true,
   providers: [],
-  apiUrl: location.origin + '/api',
-  wsUrl: location.origin + '/ws',
+  apiUrl: 'http://tigerbox.local/api',
+  wsUrl: 'ws://tigerbox.local/ws',
 };

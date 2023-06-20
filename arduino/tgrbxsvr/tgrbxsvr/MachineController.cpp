@@ -2,7 +2,7 @@
 #include <Servo.h>
 #include <HX711.h>
 
-const int servoPin = 32;
+const int servoPin = 14;
 const int SERVO_CLOSE_ANGLE = 0;
 const int SERVO_OPEN_ANGLE = 90;
 Servo servo;
@@ -10,13 +10,13 @@ Servo servo;
 const int LOADCELL_TIMES = 1;
 
 //Container
-const int LOADCELL_A_SCK_PIN = 27;
-const int LOADCELL_A_DOUT_PIN = 26;
+const int LOADCELL_A_SCK_PIN = 19;
+const int LOADCELL_A_DOUT_PIN = 21;
 HX711 scale_A;
 
 //Plate
-const int LOADCELL_B_SCK_PIN = 25;
-const int LOADCELL_B_DOUT_PIN = 33;
+const int LOADCELL_B_SCK_PIN = 5;
+const int LOADCELL_B_DOUT_PIN = 18;
 HX711 scale_B;
 
 double getScaleValue(HX711 scale) {

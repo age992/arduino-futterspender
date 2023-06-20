@@ -56,6 +56,41 @@ bool motorCheckRunning = false;
 TaskHandle_t motorOperationCheckHandle;
 MotorCheckParams motorCheckParams;
 
+
+//Status LED
+const int LED_PIN = 22;
+const int LED_PENDING_FREQ = 2;
+TaskHandle_t ledPendingTaskHandle = nullptr;
+
+void led_task_statusPending(void* pvParameters) {
+  digitalWrite(LED_PIN, LOW);
+  const double delay = ((double) 1 )/ LED_PENDING_FREQ;
+
+  while(true){
+    vTaskDelay(pdMS_TO_TICKS(delay * 1000));
+    digitalWrite(LED_PIN, HIGH);
+    vTaskDelay(pdMS_TO_TICKS(delay * 1000));
+    digitalWrite(LED_PIN, LOW);
+  }
+
+  vTaskDelete(NULL);
+}
+
+void setLEDPending(){
+  if (ledPendingTaskHandle != nullptr && eTaskGetState(ledPendingTaskHandle) != eDeleted) {
+    vTaskDelete(ledPendingTaskHandle);
+  }
+
+  xTaskCreatePinnedToCore(led_task_statusPending, "LED_Pend", 4096, NULL, 1, &ledPendingTaskHandle, 1);
+}
+
+void setLEDReady(){
+  if (ledPendingTaskHandle != nullptr && eTaskGetState(ledPendingTaskHandle) != eDeleted) {
+    vTaskDelete(ledPendingTaskHandle);
+  }
+  digitalWrite(LED_PIN, HIGH);
+}
+
 void motorOperationCheckTask(void* pvParameters) {
   vTaskDelay(pdMS_TO_TICKS(MOTOR_CHECK_WAIT * 1000));
 
@@ -88,6 +123,8 @@ void setSchedule(Schedule* newSchedule) {
 
 void setup() {
   Serial.begin(115200);
+  pinMode(LED_PIN, OUTPUT);
+  setLEDPending();
 
   dataAccess.init();
   config = dataAccess.getConfig();
@@ -134,6 +171,8 @@ void setup() {
   status->AutomaticFeeding = false;
   status->ManualFeeding = false;
   previousStatus = status;
+
+  setLEDReady();
 }
 
 void printRam() {
