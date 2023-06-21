@@ -9,6 +9,7 @@ extern DataAccess dataAccess;
 extern MachineController machineController;
 extern Schedule* selectedSchedule;
 extern UserSettings* userSettings;
+extern SystemSettings* systemSettings;
 extern MachineStatus* currentStatus;
 
 extern void setSchedule(Schedule* newSchedule);

@@ -139,6 +139,8 @@ SystemSettings *DataAccess::getSystemSettings() {
     settings->ContainerOffset = sqlite3_column_int(stmt, 2);
     settings->PlateScale = sqlite3_column_double(stmt, 3);
     settings->PlateOffset = sqlite3_column_int(stmt, 4);
+    settings->ContainerAngleClose = sqlite3_column_int(stmt, 5);
+    settings->ContainerAngleOpen = sqlite3_column_int(stmt, 6);
   } else {
     Serial.printf("ERROR executing stmt: %s\n", sqlite3_errmsg(dbSystem));
   }
@@ -159,17 +161,21 @@ bool DataAccess::updateSystemSettings(SystemSettings* settings){
               "ContainerScale = ?,"
               "ContainerOffset = ?,"
               "PlateScale = ?,"
-              "PlateOffset = ? ";
+              "PlateOffset = ?,"
+              "ContainerAngleClose = ?,"
+              "ContainerAngleOpen = ? ";
 
   sqlite3_stmt *stmt;
 
   int rc = sqlite3_prepare_v2(dbSystem, sql, -1, &stmt, NULL);
 
-  sqlite3_bind_double(stmt, 1, settings->CalibrationWeight);
+  sqlite3_bind_int(stmt, 1, settings->CalibrationWeight);
   sqlite3_bind_double(stmt, 2, settings->ContainerScale);
-  sqlite3_bind_double(stmt, 3, settings->ContainerOffset);
+  sqlite3_bind_int(stmt, 3, settings->ContainerOffset);
   sqlite3_bind_double(stmt, 4, settings->PlateScale);
-  sqlite3_bind_double(stmt, 5, settings->PlateOffset);
+  sqlite3_bind_int(stmt, 5, settings->PlateOffset);
+   sqlite3_bind_double(stmt, 6, settings->ContainerAngleClose);
+    sqlite3_bind_double(stmt, 7, settings->ContainerAngleOpen);
 
   rc = sqlite3_step(stmt);
   if (rc != SQLITE_DONE) {
@@ -177,7 +183,7 @@ bool DataAccess::updateSystemSettings(SystemSettings* settings){
   }
 
   rc = sqlite3_finalize(stmt);
-  sqlite3_close(dbUser);
+  sqlite3_close(dbSystem);
   return rc == SQLITE_OK;
 };
 

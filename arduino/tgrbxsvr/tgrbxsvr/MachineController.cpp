@@ -48,7 +48,7 @@ bool MachineController::initControls() {
 
   Serial.println("Start servo");
   servo.attach(servoPin);
-  servo.write(SERVO_CLOSE_ANGLE);
+  servo.write(systemSettings->ContainerAngleClose);
 
   return true;
 }
@@ -102,9 +102,9 @@ double MachineController::getPlateLoad() {
 };
 
 void MachineController::openContainer() {
-  servo.write(SERVO_OPEN_ANGLE);
+  servo.write(systemSettings->ContainerAngleClose + systemSettings->ContainerAngleOpen);
 };
 
 void MachineController::closeContainer() {
-  servo.write(SERVO_CLOSE_ANGLE);
+  servo.write(systemSettings->ContainerAngleClose);
 };

@@ -314,6 +314,41 @@ void handleApiPlateTare(AsyncWebServerRequest *request) {
   }
 }
 
+void handleApiContainerAngle(AsyncWebServerRequest *request) {
+   Serial.print("Hanlde Api Container anlge ");
+
+  if (!request->hasParam("open") || !request->hasParam("angle")) {
+    Serial.println("failed");
+    request->send(400);
+    return;
+  }
+
+  bool open = request->getParam("open")->value().equals("true");;
+  const int angle = std::stoi(request->getParam("angle")->value().c_str());
+  bool success = false;
+
+  if (!open) {
+    Serial.print("(Closed)");
+    systemSettings->ContainerAngleClose = angle;
+    success = dataAccess.updateSystemSettings(systemSettings);
+    machineController.closeContainer();
+  } else {
+    Serial.print("(Open)");
+    systemSettings->ContainerAngleOpen = angle;
+    success = dataAccess.updateSystemSettings(systemSettings);
+    machineController.openContainer();
+  }
+
+  if (success) {
+    Serial.print(", New Angle: ");
+    Serial.println(angle);
+    request->send(200);
+  } else {
+    Serial.println(", Failed! ");
+    request->send(500);
+  }
+}
+
 //---//
 
 bool NetworkController::initNetworkConnection(Config *config) {
@@ -373,6 +408,18 @@ bool NetworkController::initWebserver() {
   server.on("/api/container", [](AsyncWebServerRequest *request) {
     handleApiContainer(request);
   });
+  server.on("/api/settings/tare/plate", HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleApiScaleTare(request);
+  });
+  server.on("/api/settings/tare", HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleApiScaleTare(request);
+  });
+  server.on("/api/settings/calibration", HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleApiScaleCalibration(request);
+  });
+  server.on("/api/settings/containerAngle", HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleApiContainerAngle(request);
+  });
   server.on("/api/settings", HTTP_GET, [](AsyncWebServerRequest *request) {
     handleApiSettingsGet(request);
   });
@@ -380,15 +427,6 @@ bool NetworkController::initWebserver() {
     "/api/settings", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
       handleApiSettingsPut(request, data);
     });
-  server.on("/api/settings/tare", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleApiScaleTare(request);
-  });
-  server.on("/api/settings/tare/plate", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleApiScaleTare(request);
-  });
-  server.on("/api/settings/calibration", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleApiScaleCalibration(request);
-  });
   server.on("/api/schedule/activate", [](AsyncWebServerRequest *request) {
     handleApiScheduleActivate(request);
   });

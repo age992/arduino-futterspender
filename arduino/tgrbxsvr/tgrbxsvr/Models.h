@@ -41,8 +41,8 @@ struct SystemSettings {
   int ContainerOffset;
   double PlateScale;
   int PlateOffset;
-  int containerLidAngleClose;
-  int containerLidAngleOpen;
+  int ContainerAngleClose;
+  int ContainerAngleOpen;
 };
 
 //--- DB: History ---
