@@ -409,7 +409,7 @@ bool NetworkController::initWebserver() {
     handleApiContainer(request);
   });
   server.on("/api/settings/tare/plate", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleApiScaleTare(request);
+    handleApiPlateTare(request);
   });
   server.on("/api/settings/tare", HTTP_GET, [](AsyncWebServerRequest *request) {
     handleApiScaleTare(request);

@@ -11,14 +11,14 @@
 #include "NetworkController.h"
 #include "Models.h"
 
-const double WEIGHT_D_THRESHOLD = 1;  //in gramm/second
-const double SAFETY_WEIGHT_GAP = 1;   //in gramm, start closing a bit earlier to include container closing time
-const double CONTAINER_EMPTY_THRESHOLD = 1;
+const double WEIGHT_D_THRESHOLD = 2;  //in gramm/second
+const double SAFETY_WEIGHT_GAP = 2;   //in gramm, start closing a bit earlier to include container closing time
+const double CONTAINER_EMPTY_THRESHOLD = 2;
 const double NO_CONTAINER_THRESHOLD = -10;  //negative, since empty container = tar weight
-const double PLATE_EMPTY_THRESHOLD = 1;
+const double PLATE_EMPTY_THRESHOLD = 2;
 
 const double LOOP_FREQ_NORMAL = 0.5;
-const double LOOP_FREQ_FAST = 3;
+const double LOOP_FREQ_FAST = 50;
 const double COOLDOWN_TIME = 5;  //seconds
 
 double CURRENT_LOOP_FREQ = LOOP_FREQ_NORMAL;
@@ -36,10 +36,10 @@ DataAccess dataAccess;
 MachineController machineController;
 NetworkController networkController;
 
-long previousTimestamp = 0; //daytime in ms
-long currentTimestamp = 0; //daytime in ms
+long previousTimestamp = 0;  //daytime in ms
+long currentTimestamp = 0;   //daytime in ms
 
-long lastFedTimestamp = 0; //unix in s
+long lastFedTimestamp = 0;  //unix in s
 int numTimesFedToday = 0;
 
 double currentFeedTargetWeight = 0;
@@ -52,8 +52,11 @@ Schedule* historySchedule = nullptr;
 std::vector<Event> eventHistoryBuffer;
 
 const int MOTOR_CHECK_WAIT = 2;  //seconds
-bool motorCheckRunning = false;
+bool motorOpenCheckRunning = false;
+bool motorCloseCheckRunning = false;
 TaskHandle_t motorOperationCheckHandle;
+TaskHandle_t motorOpenCheckHandle;
+TaskHandle_t motorCloseCheckHandle;
 MotorCheckParams motorCheckParams;
 
 
@@ -64,9 +67,9 @@ TaskHandle_t ledPendingTaskHandle = nullptr;
 
 void led_task_statusPending(void* pvParameters) {
   digitalWrite(LED_PIN, LOW);
-  const double delay = ((double) 1 )/ LED_PENDING_FREQ;
+  const double delay = ((double)1) / LED_PENDING_FREQ;
 
-  while(true){
+  while (true) {
     vTaskDelay(pdMS_TO_TICKS(delay * 1000));
     digitalWrite(LED_PIN, HIGH);
     vTaskDelay(pdMS_TO_TICKS(delay * 1000));
@@ -76,7 +79,7 @@ void led_task_statusPending(void* pvParameters) {
   vTaskDelete(NULL);
 }
 
-void setLEDPending(){
+void setLEDPending() {
   if (ledPendingTaskHandle != nullptr && eTaskGetState(ledPendingTaskHandle) != eDeleted) {
     vTaskDelete(ledPendingTaskHandle);
   }
@@ -84,13 +87,13 @@ void setLEDPending(){
   xTaskCreatePinnedToCore(led_task_statusPending, "LED_Pend", 4096, NULL, 1, &ledPendingTaskHandle, 1);
 }
 
-void setLEDReady(){
+void setLEDReady() {
   if (ledPendingTaskHandle != nullptr && eTaskGetState(ledPendingTaskHandle) != eDeleted) {
     vTaskDelete(ledPendingTaskHandle);
   }
   digitalWrite(LED_PIN, HIGH);
 }
-
+/*
 void motorOperationCheckTask(void* pvParameters) {
   vTaskDelay(pdMS_TO_TICKS(MOTOR_CHECK_WAIT * 1000));
 
@@ -103,6 +106,38 @@ void motorOperationCheckTask(void* pvParameters) {
       currentStatus->MotorOperation = true;
     }
   } else {
+    if (container_D <= -1 * WEIGHT_D_THRESHOLD) {
+      currentStatus->MotorOperation = false;
+    } else {
+      currentStatus->MotorOperation = true;
+    }
+  }
+
+  vTaskDelete(NULL);
+}*/
+
+void motorOpenCheckTask(void* pvParameters) {
+  vTaskDelay(pdMS_TO_TICKS(MOTOR_CHECK_WAIT * 1000));
+
+  if (motorOpenCheckRunning) {
+    const double container_D = currentStatus->ContainerLoad - motorCheckParams.ContainerLoad;
+
+    if (container_D / (double)MOTOR_CHECK_WAIT > -1 * WEIGHT_D_THRESHOLD) {
+      currentStatus->MotorOperation = false;
+    } else {
+      currentStatus->MotorOperation = true;
+    }
+  }
+
+  vTaskDelete(NULL);
+}
+
+void motorCloseCheckTask(void* pvParameters) {
+  vTaskDelay(pdMS_TO_TICKS(MOTOR_CHECK_WAIT * 1000));
+
+  if (motorCloseCheckRunning) {
+    const double container_D = currentStatus->ContainerLoad - motorCheckParams.ContainerLoad;
+
     if (container_D <= -1 * WEIGHT_D_THRESHOLD) {
       currentStatus->MotorOperation = false;
     } else {
@@ -203,7 +238,7 @@ void loop() {
 
   if (feedPending()) {
     if (currentStatus->ContainerLoad > CONTAINER_EMPTY_THRESHOLD) {
-      if(!selectedSchedule->Active || currentStatus->ManualFeeding){
+      if (!selectedSchedule->Active || currentStatus->ManualFeeding) {
         //skip feed
         lastFedTimestamp = getUnixTimestamp(currentTimestamp);
         Event skippedFeed;
@@ -212,12 +247,14 @@ void loop() {
         dataAccess.logEventHistory(skippedFeed);
         eventHistoryBuffer.push_back(skippedFeed);
         //log
-      }else if (!currentStatus->Open) {
+      } else if (!currentStatus->Open) {
         //start feeding
         Serial.println("Start feeding!");
-        currentFeedTargetWeight = min(userSettings->PlateFilling, currentStatus->PlateLoad + currentStatus->ContainerLoad) - SAFETY_WEIGHT_GAP;
+        currentFeedTargetWeight = min(currentStatus->PlateLoad + userSettings->PlateFilling, currentStatus->PlateLoad + currentStatus->ContainerLoad) - SAFETY_WEIGHT_GAP;
         openContainer();
         currentStatus->AutomaticFeeding = true;
+        Serial.print("Targetweight: ");
+        Serial.println(currentFeedTargetWeight);
       } else if (currentStatus->PlateLoad >= currentFeedTargetWeight || currentStatus->ContainerLoad <= CONTAINER_EMPTY_THRESHOLD) {
         //finished feeding
         Serial.println("Finished feeding");
@@ -234,6 +271,8 @@ void loop() {
         feed.Type = Feed;
         dataAccess.logEventHistory(feed);
         eventHistoryBuffer.push_back(feed);
+        Serial.print("Final weight: ");
+        Serial.println(currentStatus->PlateLoad);
       } else if (!currentStatus->MotorOperation) {
         //abort feeding
         Serial.println("Abort feeding because Motor fail");
@@ -269,8 +308,10 @@ void loop() {
   previousTimestamp = currentTimestamp;
   delete previousStatus;
   previousStatus = currentStatus;
-  double delayVal = (1 / CURRENT_LOOP_FREQ) * 1000;
-  delay(delayVal);
+  double delayVal = ((double) 1 / CURRENT_LOOP_FREQ) * 1000;
+  Serial.print("Delay Val: ");
+  Serial.println(delayVal);
+  vTaskDelay(pdMS_TO_TICKS(delayVal));;
 }
 
 ScaleData createScaleDataHistory(Scale scaleID, double value) {
@@ -286,13 +327,16 @@ void openContainer() {
   machineController.openContainer();
   currentStatus->Open = true;
 
-  if (motorOperationCheckHandle != nullptr && eTaskGetState(motorOperationCheckHandle) != eDeleted) {
-    vTaskDelete(motorOperationCheckHandle);
+  if (motorCloseCheckHandle != nullptr && eTaskGetState(motorCloseCheckHandle) != eDeleted) {
+    motorCloseCheckRunning = false;
   }
 
-  motorCheckParams.ContainerLoad = currentStatus->ContainerLoad;
-  motorCheckParams.Open = true;
-  xTaskCreatePinnedToCore(motorOperationCheckTask, "MotorOpenCheck", 4069, NULL, 1, &motorOperationCheckHandle, 1);
+  if (motorOpenCheckHandle == nullptr) {
+    motorCheckParams.ContainerLoad = currentStatus->ContainerLoad;
+   // motorCheckParams.Open = true;
+    motorOpenCheckRunning = true;
+    xTaskCreatePinnedToCore(motorOpenCheckTask, "MotorOpenCheck", 4069, NULL, 1, &motorOpenCheckHandle, 1);
+  }
 }
 
 void closeContainer() {
@@ -300,13 +344,16 @@ void closeContainer() {
   machineController.closeContainer();
   currentStatus->Open = false;
 
-  if (motorOperationCheckHandle != nullptr && eTaskGetState(motorOperationCheckHandle) != eDeleted) {
-    vTaskDelete(motorOperationCheckHandle);
+  if (motorOpenCheckHandle != nullptr && eTaskGetState(motorOpenCheckHandle) != eDeleted) {
+    motorOpenCheckRunning = false;
   }
 
-  motorCheckParams.ContainerLoad = currentStatus->ContainerLoad;
-  motorCheckParams.Open = false;
-  xTaskCreatePinnedToCore(motorOperationCheckTask, "MotorCloseCheck", 4069, NULL, 1, &motorOperationCheckHandle, 1);
+  if (motorCloseCheckHandle == nullptr) {
+    motorCheckParams.ContainerLoad = currentStatus->ContainerLoad;
+   // motorCheckParams.Open = false;
+    motorCloseCheckRunning = true;
+    xTaskCreatePinnedToCore(motorCloseCheckTask, "MotorCloseCheck", 4069, NULL, 1, &motorCloseCheckHandle, 1);
+  }
 }
 
 MachineStatus* getUpdatedStatus() {
@@ -322,6 +369,11 @@ SignificantWeightChange weightDifferenceSignificant() {
   const double container_D = (currentStatus->ContainerLoad - previousStatus->ContainerLoad) / time_D;
   const double plate_D = (currentStatus->PlateLoad - previousStatus->PlateLoad) / time_D;
   SignificantWeightChange significantChange = None;
+  /*
+  Serial.print("Container_D: ");
+  Serial.println(container_D);
+  Serial.print("plate_D: ");
+  Serial.println(plate_D);*/
 
   if (abs(container_D) > WEIGHT_D_THRESHOLD && abs(plate_D) > WEIGHT_D_THRESHOLD) {
     significantChange = Both;
@@ -335,15 +387,23 @@ SignificantWeightChange weightDifferenceSignificant() {
 }
 
 void updateLoopFrequency(SignificantWeightChange significantChange) {
+  /*Serial.print("NoStatusChange: ");
+  Serial.println(noStatusChangeTimestamp);
+  Serial.print("currentTimestamp: ");
+  Serial.println(currentTimestamp);*/
+  
+  if (CURRENT_LOOP_FREQ == LOOP_FREQ_FAST && currentTimestamp - noStatusChangeTimestamp > COOLDOWN_TIME * 1000) {
+    Serial.println("Loop freq normal");
+    CURRENT_LOOP_FREQ = LOOP_FREQ_NORMAL;
+  }
+
   if (significantChange != None || currentStatus->Open) {
     CURRENT_LOOP_FREQ = LOOP_FREQ_FAST;
-    noStatusChangeTimestamp = 0;
-    if (significantChange != None) {
-    }
-  } else if (noStatusChangeTimestamp == 0) {
+    Serial.println("Loop freq fast");
+  }
+  
+  if(significantChange != None) {
     noStatusChangeTimestamp = currentTimestamp;
-  } else if (currentTimestamp - noStatusChangeTimestamp > COOLDOWN_TIME * 1000) {
-    CURRENT_LOOP_FREQ = LOOP_FREQ_NORMAL;
   }
 }
 
@@ -364,7 +424,7 @@ void handleCurrentData(SignificantWeightChange significantChange) {
     delete historySchedule;
     historySchedule = nullptr;
   }
-  
+
   if (!eventHistoryBuffer.empty()) {
     for (Event eventData : eventHistoryBuffer) {
       ArduinoJson::JsonObject dataObject = events.createNestedObject();
@@ -385,10 +445,10 @@ void handleCurrentData(SignificantWeightChange significantChange) {
       }
     case OnlyPlate:
       {
-        /*ScaleData data = createScaleDataHistory(Plate, currentStatus->PlateLoad);
+        ScaleData data = createScaleDataHistory(Plate, currentStatus->PlateLoad);
         plateScaleHistoryBuffer.push_back(data);
         ArduinoJson::JsonObject dataObject = scaleData.createNestedObject();
-        setJsonScaleHistory(&data, dataObject);*/
+        setJsonScaleHistory(&data, dataObject);
         break;
       }
     case Both:
@@ -502,7 +562,6 @@ long getDay(long timestamp) {
   return timestamp / 86400L;
 }
 
-long getUnixTimestamp(long daytimeMS){
+long getUnixTimestamp(long daytimeMS) {
   return networkController.getToday() + daytimeMS / 1000;
 }
-

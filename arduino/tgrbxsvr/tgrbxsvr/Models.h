@@ -17,7 +17,6 @@ struct MachineStatus {
 
 struct MotorCheckParams {
   double ContainerLoad;
-  bool Open;
 };
 
 enum SignificantWeightChange {
