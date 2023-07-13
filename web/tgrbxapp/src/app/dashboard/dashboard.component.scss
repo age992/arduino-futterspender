@@ -28,6 +28,11 @@
 #status {
   height: 25%;
 
+  .zeroWeight {
+    color: red;
+    stroke: red;
+  }
+
   .svgContainer {
     position: relative;
     width: 100px;

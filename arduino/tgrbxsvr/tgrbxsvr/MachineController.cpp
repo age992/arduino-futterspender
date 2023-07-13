@@ -7,7 +7,7 @@ const int SERVO_CLOSE_ANGLE = 0;
 const int SERVO_OPEN_ANGLE = 90;
 Servo servo;
 
-const int LOADCELL_TIMES = 2;
+const int LOADCELL_TIMES = 10;
 
 //Container
 const int LOADCELL_A_SCK_PIN = 19;

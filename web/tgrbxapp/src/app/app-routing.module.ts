@@ -17,7 +17,7 @@ const routes: Routes = [
     component: SchedulesComponent,
     data: { animation: 'schedules' },
   },
-  {
+  /*{
     path: 'settings',
     component: SettingsComponent,
     data: { animation: 'settings' },
@@ -26,7 +26,7 @@ const routes: Routes = [
     path: 'history',
     component: HistoryComponent,
     data: { animation: 'history' },
-  },
+  },*/
 ];
 
 @NgModule({

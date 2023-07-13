@@ -23,22 +23,23 @@ import { Scale } from 'src/models/ScaleData';
   styleUrls: ['./dashboard.component.scss'],
 })
 export class DashboardComponent implements OnInit {
-  public EScheduleMode: typeof EScheduleMode = EScheduleMode;
-  public getTimestamp = getTimestamp;
+  protected EScheduleMode: typeof EScheduleMode = EScheduleMode;
+  protected math = Math;
+  protected getTimestamp = getTimestamp;
 
-  public MachineStatus: MachineStatus | null = null;
-  public LoadingStatus: boolean = false;
-  public Connected: boolean = true;
+  protected MachineStatus: MachineStatus | null = null;
+  protected LoadingStatus: boolean = false;
+  protected Connected: boolean = true;
 
-  public settings: Settings | null = null;
-  public FetchingSettings = false;
+  protected settings: Settings | null = null;
+  protected FetchingSettings = false;
 
-  public currentSchedule: Schedule | null = null;
-  public nextFeedingTime: number | null = null;
-  public FetchingSchedule: boolean = false;
-  public UpdatingActivity: boolean = false;
+  protected currentSchedule: Schedule | null = null;
+  protected nextFeedingTime: number | null = null;
+  protected FetchingSchedule: boolean = false;
+  protected UpdatingActivity: boolean = false;
 
-  public History: HistoryData = {
+  protected History: HistoryData = {
     schedules: [],
     events: [],
     scaleData: [],
@@ -141,7 +142,7 @@ export class DashboardComponent implements OnInit {
     this.historyService.HistoryData.subscribe((h) => {
       if (h.events && h.events.length > 0) {
         this.History.events.push(...h.events);
-        debugger;
+        // debugger;
         const newEventFeed = this.History.events
           .filter((_) => _.Type == EventType.Feed)
           .map((_) => {

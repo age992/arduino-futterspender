@@ -237,62 +237,61 @@ void loop() {
   currentStatus = getUpdatedStatus();
 
   if (feedPending()) {
-    if (currentStatus->ContainerLoad > CONTAINER_EMPTY_THRESHOLD) {
-      if (!selectedSchedule->Active || currentStatus->ManualFeeding) {
-        //skip feed
-        lastFedTimestamp = getUnixTimestamp(currentTimestamp);
-        Event skippedFeed;
-        skippedFeed.CreatedOn = lastFedTimestamp;
-        skippedFeed.Type = SkippedFeed;
-        dataAccess.logEventHistory(skippedFeed);
-        eventHistoryBuffer.push_back(skippedFeed);
-        //log
-      } else if (!currentStatus->Open) {
-        //start feeding
-        Serial.println("Start feeding!");
-        currentFeedTargetWeight = min(currentStatus->PlateLoad + userSettings->PlateFilling, currentStatus->PlateLoad + currentStatus->ContainerLoad) - SAFETY_WEIGHT_GAP;
-        openContainer();
-        currentStatus->AutomaticFeeding = true;
-        Serial.print("Targetweight: ");
-        Serial.println(currentFeedTargetWeight);
-      } else if (currentStatus->PlateLoad >= currentFeedTargetWeight || currentStatus->ContainerLoad <= CONTAINER_EMPTY_THRESHOLD) {
-        //finished feeding
-        Serial.println("Finished feeding");
-        lastFedTimestamp = getUnixTimestamp(currentTimestamp);
-        currentFeedTargetWeight = 0;
-        numTimesFedToday++;
-        if (selectedSchedule != nullptr && selectedSchedule->Mode == MaxTimes && numTimesFedToday == selectedSchedule->MaxTimes) {
-          //set wait timestamp tomorrow
-        }
-        closeContainer();
-        currentStatus->AutomaticFeeding = false;
-        Event feed;
-        feed.CreatedOn = lastFedTimestamp;
-        feed.Type = Feed;
-        dataAccess.logEventHistory(feed);
-        eventHistoryBuffer.push_back(feed);
-        Serial.print("Final weight: ");
-        Serial.println(currentStatus->PlateLoad);
-      } else if (!currentStatus->MotorOperation) {
-        //abort feeding
-        Serial.println("Abort feeding because Motor fail");
-        lastFedTimestamp = getUnixTimestamp(currentTimestamp);
-        currentFeedTargetWeight = 0;
-        Serial.print("Current Feed Targetweight: ");
-        Serial.println(currentFeedTargetWeight);
-        closeContainer();
-        currentStatus->AutomaticFeeding = false;
-        Event motorFailure;
-        motorFailure.CreatedOn = lastFedTimestamp;
-        motorFailure.Type = MotorFaliure;
-        Event feedMissed;
-        feedMissed.CreatedOn = lastFedTimestamp;
-        feedMissed.Type = MissedFeed;
-        dataAccess.logEventHistory(motorFailure);
-        dataAccess.logEventHistory(feedMissed);
-        eventHistoryBuffer.push_back(motorFailure);
-        eventHistoryBuffer.push_back(feedMissed);
+    if (!selectedSchedule->Active || currentStatus->ManualFeeding || (selectedSchedule->OnlyWhenEmpty && currentStatus->PlateLoad > PLATE_EMPTY_THRESHOLD) || currentStatus->ContainerLoad <= CONTAINER_EMPTY_THRESHOLD) {
+      //skip feed
+      lastFedTimestamp = getUnixTimestamp(currentTimestamp);
+      Event skippedFeed;
+      skippedFeed.CreatedOn = lastFedTimestamp;
+      skippedFeed.Type = SkippedFeed;
+      //dataAccess.logEventHistory(skippedFeed);
+      eventHistoryBuffer.push_back(skippedFeed);
+      //log
+    } else if (!currentStatus->Open) {
+      //start feeding
+      Serial.println("Start feeding!");
+      currentFeedTargetWeight = max(currentStatus->ContainerLoad - userSettings->PlateFilling, (double)0) + SAFETY_WEIGHT_GAP;
+      openContainer();
+      currentStatus->AutomaticFeeding = true;
+      Serial.print("Targetweight: ");
+      Serial.println(currentFeedTargetWeight);
+    } else if (currentStatus->ContainerLoad <= currentFeedTargetWeight || currentStatus->ContainerLoad <= CONTAINER_EMPTY_THRESHOLD) {
+      //finished feeding
+      Serial.println("Finished feeding");
+      lastFedTimestamp = getUnixTimestamp(currentTimestamp);
+      currentFeedTargetWeight = 0;
+      numTimesFedToday++;
+      if (selectedSchedule != nullptr && selectedSchedule->Mode == MaxTimes && numTimesFedToday == selectedSchedule->MaxTimes) {
+        //set wait timestamp tomorrow
       }
+      closeContainer();
+      currentStatus->AutomaticFeeding = false;
+      Event feed;
+      feed.CreatedOn = lastFedTimestamp;
+      feed.Type = Feed;
+      //dataAccess.logEventHistory(feed);
+      eventHistoryBuffer.push_back(feed);
+      Serial.print("Final weight: ");
+      Serial.println(currentStatus->PlateLoad);
+    } else if (!currentStatus->MotorOperation) {
+      //abort feeding
+      Serial.println("Abort feeding because Motor fail");
+      lastFedTimestamp = getUnixTimestamp(currentTimestamp);
+      currentFeedTargetWeight = 0;
+      Serial.print("Current Feed Targetweight: ");
+      Serial.println(currentFeedTargetWeight);
+      closeContainer();
+      currentStatus->AutomaticFeeding = false;
+      Event motorFailure;
+      motorFailure.CreatedOn = lastFedTimestamp;
+      motorFailure.Type = MotorFaliure;
+      Event feedMissed;
+      feedMissed.CreatedOn = lastFedTimestamp;
+      feedMissed.Type = MissedFeed;
+      //dataAccess.logEventHistory(motorFailure);
+      //dataAccess.logEventHistory(feedMissed);
+      eventHistoryBuffer.push_back(motorFailure);
+      eventHistoryBuffer.push_back(feedMissed);
+      currentStatus->MotorOperation = true;
     }
   }
   /*
@@ -308,10 +307,10 @@ void loop() {
   previousTimestamp = currentTimestamp;
   delete previousStatus;
   previousStatus = currentStatus;
-  double delayVal = ((double) 1 / CURRENT_LOOP_FREQ) * 1000;
-  Serial.print("Delay Val: ");
-  Serial.println(delayVal);
-  vTaskDelay(pdMS_TO_TICKS(delayVal));;
+  double delayVal = ((double)1 / CURRENT_LOOP_FREQ) * 1000;
+  //Serial.print("Delay Val: ");
+  //Serial.println(delayVal);
+  vTaskDelay(pdMS_TO_TICKS(delayVal));
 }
 
 ScaleData createScaleDataHistory(Scale scaleID, double value) {
@@ -333,7 +332,7 @@ void openContainer() {
 
   if (motorOpenCheckHandle == nullptr) {
     motorCheckParams.ContainerLoad = currentStatus->ContainerLoad;
-   // motorCheckParams.Open = true;
+    // motorCheckParams.Open = true;
     motorOpenCheckRunning = true;
     xTaskCreatePinnedToCore(motorOpenCheckTask, "MotorOpenCheck", 4069, NULL, 1, &motorOpenCheckHandle, 1);
   }
@@ -350,7 +349,7 @@ void closeContainer() {
 
   if (motorCloseCheckHandle == nullptr) {
     motorCheckParams.ContainerLoad = currentStatus->ContainerLoad;
-   // motorCheckParams.Open = false;
+    // motorCheckParams.Open = false;
     motorCloseCheckRunning = true;
     xTaskCreatePinnedToCore(motorCloseCheckTask, "MotorCloseCheck", 4069, NULL, 1, &motorCloseCheckHandle, 1);
   }
@@ -391,18 +390,18 @@ void updateLoopFrequency(SignificantWeightChange significantChange) {
   Serial.println(noStatusChangeTimestamp);
   Serial.print("currentTimestamp: ");
   Serial.println(currentTimestamp);*/
-  
+
   if (CURRENT_LOOP_FREQ == LOOP_FREQ_FAST && currentTimestamp - noStatusChangeTimestamp > COOLDOWN_TIME * 1000) {
-    Serial.println("Loop freq normal");
+    //Serial.println("Loop freq normal");
     CURRENT_LOOP_FREQ = LOOP_FREQ_NORMAL;
   }
 
   if (significantChange != None || currentStatus->Open) {
     CURRENT_LOOP_FREQ = LOOP_FREQ_FAST;
-    Serial.println("Loop freq fast");
+    // Serial.println("Loop freq fast");
   }
-  
-  if(significantChange != None) {
+
+  if (significantChange != None) {
     noStatusChangeTimestamp = currentTimestamp;
   }
 }
@@ -417,13 +416,13 @@ void handleCurrentData(SignificantWeightChange significantChange) {
   ArduinoJson::JsonArray schedules = history.createNestedArray("schedules");
   ArduinoJson::JsonArray events = history.createNestedArray("events");
   ArduinoJson::JsonArray scaleData = history.createNestedArray("scaleData");
-
+  /*
   if (historySchedule != nullptr) {
     ArduinoJson::JsonObject dataObject = schedules.createNestedObject();
     setJsonSchedule(dataObject, historySchedule);
     delete historySchedule;
     historySchedule = nullptr;
-  }
+  }*/
 
   if (!eventHistoryBuffer.empty()) {
     for (Event eventData : eventHistoryBuffer) {
@@ -433,7 +432,7 @@ void handleCurrentData(SignificantWeightChange significantChange) {
     }
     eventHistoryBuffer.clear();
   }
-
+  /*
   switch (significantChange) {
     case OnlyContainer:
       {
@@ -464,7 +463,7 @@ void handleCurrentData(SignificantWeightChange significantChange) {
         break;
       }
   }
-
+  */
   if (clientsAvailable) {
     String serialized;
     serializeJson(doc, serialized);
@@ -475,33 +474,36 @@ void handleCurrentData(SignificantWeightChange significantChange) {
   doc.clear();
 
   //save and clear history buffers if possible/necessary
+  /*Serial.println(millis());
   if (CURRENT_LOOP_FREQ == LOOP_FREQ_NORMAL) {
     if (!containerScaleHistoryBuffer.empty()) {
       //log
-      Serial.print("Empty + log Container Scale buffer");
+      Serial.println("Empty + log Container Scale buffer");
       dataAccess.logScaleHistory(containerScaleHistoryBuffer);
       containerScaleHistoryBuffer.clear();
     }
     if (!plateScaleHistoryBuffer.empty()) {
       //log
-      Serial.print("Empty + log Plate Scale buffer");
+      Serial.println("Empty + log Plate Scale buffer");
       dataAccess.logScaleHistory(plateScaleHistoryBuffer);
       plateScaleHistoryBuffer.clear();
     }
   } else {
     if (containerScaleHistoryBuffer.size() >= MAX_HISTORY_BUFFER) {
       //log
-      Serial.print("Empty + log Container Scale buffer");
+      Serial.println("Empty + log Container Scale buffer");
       dataAccess.logScaleHistory(containerScaleHistoryBuffer);
       containerScaleHistoryBuffer.clear();
     }
     if (plateScaleHistoryBuffer.size() >= MAX_HISTORY_BUFFER) {
       //log
-      Serial.print("Empty + log Plate Scale buffer");
+      Serial.println("Empty + log Plate Scale buffer");
       dataAccess.logScaleHistory(plateScaleHistoryBuffer);
       plateScaleHistoryBuffer.clear();
     }
   }
+  Serial.println("Done logging");
+  Serial.println(millis());*/
 }
 
 void handleNotifications() {

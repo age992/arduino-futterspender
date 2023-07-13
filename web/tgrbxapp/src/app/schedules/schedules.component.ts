@@ -17,9 +17,9 @@ import { HttpResponse } from '@angular/common/http';
 })
 export class SchedulesComponent implements OnInit {
   public EScheduleMode: typeof EScheduleMode = EScheduleMode;
-  public modeIDs = Object.keys(EScheduleMode)
+  public modeIDs = [EScheduleMode.FixedDaytime]; /* Object.keys(EScheduleMode)
     .filter((key) => !isNaN(Number(key)))
-    .map((key: string) => Number(key));
+    .map((key: string) => Number(key));*/
 
   public getTimestamp = getTimestamp;
   public timePickerToUnix = timePickerToUnix;
@@ -190,7 +190,6 @@ export class SchedulesComponent implements OnInit {
 
   validateSchedule = (schedule: Schedule) => {
     let valid = false;
-    console.log(schedule);
     switch (true) {
       case schedule.Mode == EScheduleMode.MaxTimes:
         valid =
